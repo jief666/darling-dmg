@@ -13,11 +13,13 @@
 #include "CachedReader.h"
 #include "SubReader.h"
 #include "exceptions.h"
+#include "DarlingDMGCrypto.h" // for base64decode
 
 static uint64_t findKolyBlock(std::shared_ptr<Reader> reader)
 {
 	if (reader->length() < 1024)
-		throw io_error("File too small");
+//		throw io_error("File too small");
+		return 0;
 
 	char buf[1024];
 	reader->read(buf, sizeof(buf), reader->length() - 1024);
@@ -208,26 +210,6 @@ BLKXTable* DMGDisk::loadBLKXTableForPartition(int index)
 	xmlXPathFreeContext(xpathContext);
 	
 	return rv;
-}
-
-bool DMGDisk::base64Decode(const std::string& input, std::vector<uint8_t>& output)
-{
-	BIO *b64, *bmem;
-	std::unique_ptr<char[]> buffer(new char[input.length()]);
-	int rd;
-
-	b64 = BIO_new(BIO_f_base64());
-	bmem = BIO_new_mem_buf((void*) input.c_str(), input.length());
-	bmem = BIO_push(b64, bmem);
-	//BIO_set_flags(bmem, BIO_FLAGS_BASE64_NO_NL);
-	
-	rd = BIO_read(bmem, buffer.get(), input.length());
-	
-	if (rd > 0)
-		output.assign(buffer.get(), buffer.get()+rd);
-
-	BIO_free_all(bmem);
-	return rd >= 0;
 }
 
 std::shared_ptr<Reader> DMGDisk::readerForPartition(int index)

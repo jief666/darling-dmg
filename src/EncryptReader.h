@@ -1,20 +1,12 @@
 /*
-This file is part of apfs-fuse, a read-only implementation of APFS
-(Apple File System) for FUSE.
+Copyright (C) 2018 Jief Luce
 Copyright (C) 2017 Simon Gander
 
-Apfs-fuse is free software: you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation, either version 2 of the License, or
-(at your option) any later version.
-
-Apfs-fuse is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
+This file is originally based on the vfdecrypt sources.
+This file is also based on the work of Simon Gander (https://github.com/sgan81/apfs-fuse)
 
 You should have received a copy of the GNU General Public License
-along with apfs-fuse.  If not, see <http://www.gnu.org/licenses/>.
+along with hdimount.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 #pragma once
@@ -24,7 +16,8 @@ along with apfs-fuse.  If not, see <http://www.gnu.org/licenses/>.
 #include <string>
 #include <vector>
 #include <memory> // for shared_ptr
-#include <openssl/aes.h>
+#include "DarlingDMGCrypto.h"
+//#include <openssl/aes.h>
 
 #include "Reader.h"
 
@@ -53,5 +46,5 @@ private:
 	int32_t m_crypt_blocksize;
 
     uint8_t m_hmacsha1_key[HMACSHA1_KEY_SIZE];
-	AES_KEY m_aes_decrypt_key;
+	void* m_aes_decrypt_key;
 };

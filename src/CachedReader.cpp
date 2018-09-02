@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <iostream>
 #include <limits>
+#include <assert.h>
 #include "exceptions.h"
 
 //#define NO_CACHE
@@ -19,7 +20,7 @@ int32_t CachedReader::read(void* buf, int32_t count, uint64_t offset)
 	int32_t lastFetchPos = 0; // pos from 0 till count
 	
 #ifdef DEBUG
-	std::cout << "CachedReader::read(): offset=" << offset << ", count=" << count << std::endl;
+//	std::cout << "CachedReader::read(): offset=" << offset << ", count=" << count << std::endl;
 #endif
 
 	if (count+offset > length())
@@ -90,7 +91,7 @@ void CachedReader::nonCachedRead(void* buf, int32_t count, uint64_t offset)
 	uint64_t readPos = offset;
 
 #ifdef DEBUG
-	std::cout << "CachedReader::nonCachedRead(): offset=" << offset << ", count=" << count << std::endl;
+//	std::cout << "CachedReader::nonCachedRead(): offset=" << offset << ", count=" << count << std::endl;
 #endif
 
 	while (readPos < offset+count)
@@ -113,7 +114,7 @@ void CachedReader::nonCachedRead(void* buf, int32_t count, uint64_t offset)
 		}
 
 #ifdef DEBUG
-		std::cout << "Reading from backing reader: offset=" << blockStart << ", count=" << thistime << std::endl;
+//		std::cout << "Reading from backing reader: offset=" << blockStart << ", count=" << thistime << std::endl;
 #endif
 		rd = m_reader->read(optimalBlockBuffer.get(), thistime, blockStart);
 
@@ -142,7 +143,7 @@ void CachedReader::nonCachedRead(void* buf, int32_t count, uint64_t offset)
 		toCopy = std::min<uint32_t>(offset+count - readPos, thistime - optimalOffset);
 
 #ifdef DEBUG
-		std::cout << "Copying " << toCopy << " bytes into output buffer at offset " << outputOffset << " from internal offset " << optimalOffset << std::endl;
+//		std::cout << "Copying " << toCopy << " bytes into output buffer at offset " << outputOffset << " from internal offset " << optimalOffset << std::endl;
 #endif
 		// if (toCopy+optimalOffset > thistime)
 		// 	throw std::logic_error("Internal error");

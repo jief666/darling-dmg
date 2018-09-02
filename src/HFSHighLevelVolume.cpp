@@ -271,7 +271,7 @@ std::vector<uint8_t> HFSHighLevelVolume::getXattr(const std::string& path, const
 		rv = std::min<int>(std::numeric_limits<int>::max(), file->length());
 		output.resize(rv);
 
-		file->read(&output[0], rv, 0);
+		file->read(&output[0], output.size(), 0);
 	}
 	else if (name == XATTR_FINDER_INFO)
 	{

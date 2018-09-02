@@ -5,6 +5,7 @@
 #include "exceptions.h"
 #include "be.h"
 
+#define le(x) x
 // HFS+ compresses data in 64KB blocks
 static const unsigned int RUN_LENGTH = 64*1024;
 

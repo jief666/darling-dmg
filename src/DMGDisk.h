@@ -21,7 +21,6 @@ private:
 	void loadKoly(const UDIFResourceFile& koly);
 	bool loadPartitionElements(xmlXPathContextPtr xpathContext, xmlNodeSetPtr nodes);
 	static bool parseNameAndType(const std::string& nameAndType, std::string& name, std::string& type);
-	static bool base64Decode(const std::string& input, std::vector<uint8_t>& output);
 	BLKXTable* loadBLKXTableForPartition(int index);
 	std::shared_ptr<Reader> readerForKolyBlock(int index);
 private:

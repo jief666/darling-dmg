@@ -26,7 +26,7 @@ public:
 		#endif
 		m_descriptorData.resize(nodeSize);
 		
-		int32_t read = treeReader->read(&m_descriptorData[0], nodeSize, nodeSize*nodeIndex);
+		int32_t read = treeReader->read(&m_descriptorData[0], m_descriptorData.size(), nodeSize*nodeIndex);
 		if (read < nodeSize)
 			throw std::runtime_error("Short read of BTree node. "+std::to_string(read)+" bytes read instead of "+std::to_string(nodeSize));
 

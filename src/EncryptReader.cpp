@@ -22,13 +22,10 @@ along with hdimount.  If not, see <http://www.gnu.org/licenses/>.
 #include <inttypes.h> // for strtoumax
 #include <fcntl.h> // open, read, close...
 #include <arpa/inet.h>
-#include <openssl/sha.h>
-#include <openssl/aes.h>
-#include <openssl/hmac.h>
-#include <openssl/evp.h>
-#if defined(__linux__) || defined(__APPLE__)
-#include <termios.h>
-#endif
+#include <limits.h>
+
+#include "DarlingDMGCrypto.h"
+
 
 #include "exceptions.h"
 #include "be.h"
@@ -148,29 +145,31 @@ bool EncryptReader::SetupEncryptionV2(const char* password)
 
 		uint8_t derived_key[192/8];
 
-		PKCS5_PBKDF2_HMAC_SHA1(password, strlen(password), (unsigned char*)keydata->salt, be(keydata->salt_len), be(keydata->iteration_count), sizeof(derived_key), derived_key);
+		DarlingDMGCrypto_PKCS5_PBKDF2_HMAC_SHA1(password, strlen(password), (unsigned char*)keydata->salt, be(keydata->salt_len), be(keydata->iteration_count), sizeof(derived_key), derived_key);
 
 		uint32_t blob_len = be(keydata->encr_key_blob_size);
 		uint8_t blob[blob_len]; // /* result of the decryption operation shouldn't be bigger than ciphertext */
 
-		EVP_CIPHER_CTX ctx;
+//		EVP_CIPHER_CTX ctx;
 		int outlen, tmplen;
-
-		EVP_CIPHER_CTX_init(&ctx);
-		EVP_DecryptInit_ex(&ctx, EVP_des_ede3_cbc(), NULL, derived_key, keydata->blob_enc_iv);
-		if(!EVP_DecryptUpdate(&ctx, blob, &outlen, keydata->encr_key_blob, blob_len)) {
-			throw io_error("internal error (1) during key unwrap operation!");
-		}
-		if(!EVP_DecryptFinal_ex(&ctx, blob + outlen, &tmplen)) {
-			throw io_error("internal error (2) during key unwrap operation! Wrong password ?");
-		}
-		//outlen += tmplen;
-		EVP_CIPHER_CTX_cleanup(&ctx);
+//
+//		EVP_CIPHER_CTX_init(&ctx);
+//		EVP_DecryptInit_ex(&ctx, EVP_des_ede3_cbc(), NULL, derived_key, keydata->blob_enc_iv);
+//		if(!EVP_DecryptUpdate(&ctx, blob, &outlen, keydata->encr_key_blob, blob_len)) {
+//			throw io_error("internal error (1) during key unwrap operation!");
+//		}
+//		if(!EVP_DecryptFinal_ex(&ctx, blob + outlen, &tmplen)) {
+//			throw io_error("internal error (2) during key unwrap operation! Wrong password ?");
+//		}
+//		//outlen += tmplen;
+//		EVP_CIPHER_CTX_cleanup(&ctx);
+		
+		DarlingDMGCrypto_DES_CBC(derived_key, keydata->blob_enc_iv, blob, &outlen, keydata->encr_key_blob, blob_len);
 
 		uint8_t aes_key[32]; // up to aes 256 bits
 		memcpy((void*)&aes_key, blob, be(hdr->key_bits)/8);
 		memcpy(m_hmacsha1_key, blob+be(hdr->key_bits)/8, HMACSHA1_KEY_SIZE);
-		AES_set_decrypt_key(aes_key, be(hdr->key_bits), &m_aes_decrypt_key);
+		DarlingDMGCrypto_set_aes_decrypt_key(aes_key, be(hdr->key_bits), &m_aes_decrypt_key);
 
 		if (blob[blob_len - 1] < 1 || blob[blob_len - 1] > 8)
 			continue;
@@ -188,7 +187,7 @@ bool EncryptReader::SetupEncryptionV2(const char* password)
 EncryptReader::EncryptReader(std::shared_ptr<Reader> reader, const char* password)
 : m_reader(reader)
 {
-	
+	m_aes_decrypt_key = NULL;
 	if (!SetupEncryptionV2(password))
 	{
 		throw io_error("Not encrypted");
@@ -197,6 +196,7 @@ EncryptReader::EncryptReader(std::shared_ptr<Reader> reader, const char* passwor
 
 EncryptReader::~EncryptReader()
 {
+	if ( m_aes_decrypt_key ) free(m_aes_decrypt_key);
 }
 
 void EncryptReader::compute_iv(uint32_t blkid, uint8_t *iv)
@@ -204,7 +204,8 @@ void EncryptReader::compute_iv(uint32_t blkid, uint8_t *iv)
 	blkid = be(blkid);
 	unsigned char mdResultOpenSsl[MD_LENGTH];
 	unsigned int mdLenOpenSsl;
-	HMAC(EVP_sha1(), m_hmacsha1_key, sizeof(m_hmacsha1_key), (const unsigned char *) &blkid, sizeof(blkid), mdResultOpenSsl, &mdLenOpenSsl);
+	//HMAC(EVP_sha1(), m_hmacsha1_key, sizeof(m_hmacsha1_key), (const unsigned char *) &blkid, sizeof(blkid), mdResultOpenSsl, &mdLenOpenSsl);
+	DarlingDMGCrypto_HMAC(m_hmacsha1_key, sizeof(m_hmacsha1_key), (const unsigned char *) &blkid, sizeof(blkid), mdResultOpenSsl, &mdLenOpenSsl);
 	memcpy(iv, mdResultOpenSsl, CIPHER_BLOCKSIZE); // TODO avoid memory copy
 }
 
@@ -212,7 +213,8 @@ void EncryptReader::decrypt_chunk(void *crypted_buffer, void* outputBuffer, uint
 {
 	uint8_t iv[CIPHER_BLOCKSIZE];
 	compute_iv(blkid, iv);
-	AES_cbc_encrypt((uint8_t*)crypted_buffer, (uint8_t*)outputBuffer, m_crypt_blocksize, &m_aes_decrypt_key, iv, AES_DECRYPT);
+//	AES_cbc_encrypt((uint8_t*)crypted_buffer, (uint8_t*)outputBuffer, m_crypt_blocksize, (AES_KEY*)m_aes_decrypt_key, iv, AES_DECRYPT);
+	DarlingDMGCrypto_aes_cbc_decrypt((uint8_t*)crypted_buffer, (uint8_t*)outputBuffer, m_crypt_blocksize, m_aes_decrypt_key, iv);
 }
 
 int32_t EncryptReader::read(void* outputBuffer, int32_t size2, uint64_t off)

@@ -308,8 +308,8 @@ void HFSCatalogBTree::appendNameAndHFSPlusCatalogFileOrFolderFromLeafForParentId
 
 					if (equal)
 					{
-						std::string name = UnicharToString(recordKey->nodeName);
-						map[name] = std::shared_ptr<HFSPlusCatalogFileOrFolder>(leafNodePtr, ff); // retain leafPtr, act as a HFSPlusCatalogFileOrFolder
+						std::string name2 = UnicharToString(recordKey->nodeName);
+						map[name2] = std::shared_ptr<HFSPlusCatalogFileOrFolder>(leafNodePtr, ff); // retain leafPtr, act as a HFSPlusCatalogFileOrFolder
 					}
 				}
 				//else

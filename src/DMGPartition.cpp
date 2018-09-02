@@ -26,7 +26,7 @@ DMGPartition::DMGPartition(std::shared_ptr<Reader> disk, BLKXTable* table)
 #ifdef DEBUG
 		std::cout << "Sector " << i << " has type 0x" << std::hex << uint32_t(type) << std::dec << ", starts at byte "
 			<< be(m_table->runs[i].sectorStart)*512l << ", compressed length: "
-			<< be(m_table->runs[i].compLength) << ", compressed offset: " << be(m_table->runs[i].compOffset) + be(m_table->dataStart) << std::endl;
+			<< be(m_table->runs[i].compLength) << ", compressed offset: " << be(m_table->runs[i].compOffset) + be(m_table->dataStart) << " uncompressed size " << be(m_table->runs[i].sectorCount)*512 << std::endl;
 #endif
 	}
 }

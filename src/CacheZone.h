@@ -23,7 +23,10 @@ class CacheZone
 {
 public:
 	CacheZone(size_t maxBlocks);
-	
+	~CacheZone() {
+//		printf("CacheZone dtor\n");
+	}
+
 	enum { BLOCK_SIZE = 4096 };
 	
 	void store(const std::string& vfile, uint64_t blockId, const uint8_t* data, size_t bytes);
