@@ -168,6 +168,66 @@ int HFSCatalogBTree::listDirectory(const std::string& path, std::map<std::string
 	return 0;
 }
 
+void HFSCatalogBTree::incrementCountLeafForParentId(std::shared_ptr<HFSBTreeNode> leafNodePtr, HFSCatalogNodeID cnid, uint32_t* fileAndFolderCount)
+{
+    for (int i = 0; i < leafNodePtr->recordCount(); i++)
+    {
+        HFSPlusCatalogKey* recordKey;
+        HFSPlusCatalogFileOrFolder* ff;
+        RecordType recType;
+
+        recordKey = leafNodePtr->getRecordKey<HFSPlusCatalogKey>(i);
+        ff = leafNodePtr->getRecordData<HFSPlusCatalogFileOrFolder>(i);
+
+        recType = be(ff->folder.recordType);
+        //{
+            //std::string name = UnicharToString(recordKey->nodeName);
+            //std::cerr << "RecType " << int(recType) << ", ParentID: " << be(recordKey->parentID) << ", nodeName " << name << std::endl;
+        //}
+
+        switch (recType)
+        {
+            case RecordType::kHFSPlusFolderRecord:
+            case RecordType::kHFSPlusFileRecord:
+            {
+                
+                // filter "\0\0\0\0HFS+ Private Data"
+                if ( /*recordKey->nodeName.string[0] != 0 && */ be(recordKey->parentID) == cnid)
+                {
+                    *fileAndFolderCount += 1;
+                }
+                //else
+                //    std::cerr << "CNID not matched - " << cnid << " required\n";
+                break;
+            }
+            case RecordType::kHFSPlusFolderThreadRecord:
+            case RecordType::kHFSPlusFileThreadRecord:
+                break;
+        }
+    }
+}
+
+int HFSCatalogBTree::countDirectory(HFSCatalogNodeID id, uint32_t* fileAndFolderCount)
+{
+    int rv;
+    std::vector<std::shared_ptr<HFSBTreeNode>> leaves;
+    HFSPlusCatalogKey key;
+    std::map<std::string, std::shared_ptr<HFSPlusCatalogFileOrFolder>> beContents;
+    *fileAndFolderCount = 0;
+
+    // find leaves that may contain directory elements
+    key.parentID = id;
+    leaves = findLeafNodes((Key*) &key, idOnlyComparator);
+
+    for (std::shared_ptr<HFSBTreeNode> leafPtr : leaves)
+    {
+        //std::cerr << "**** Looking for elems with CNID " << be(key.parentID) << std::endl;
+         incrementCountLeafForParentId(leafPtr, be(key.parentID), fileAndFolderCount);
+    }
+
+    return 0;
+}
+
 static void split(const std::string &s, char delim, std::vector<std::string>& elems)
 {
 	std::stringstream ss(s);
@@ -260,7 +320,16 @@ int HFSCatalogBTree::stat(std::string path, HFSPlusCatalogFileOrFolder* s)
 			last = leafNodeHl;
 	}
 	*s = *last;
-	
+    if (be(s->file.recordType) == RecordType::kHFSPlusFolderRecord)
+    {
+        uint32_t nlink;
+        countDirectory(s->folder.folderID, &nlink);
+        if ( path.length() > 0) {
+            s->file.permissions.special.linkCount = be(nlink+2);
+        }else{
+            s->file.permissions.special.linkCount = be(nlink);
+        }
+    }
 	//std::cout << "File/folder flags: 0x" << std::hex << s->file.flags << std::endl;
 
 	return 0;
