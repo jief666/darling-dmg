@@ -13,6 +13,10 @@ public:
 	uint64_t length() override;
 private:
 	int m_fd;
+
+#ifdef DEBUG
+    std::string m_path;
+#endif
 };
 
 #endif

@@ -10,6 +10,9 @@
 FileReader::FileReader(const std::string& path)
 : m_fd(-1)
 {
+#ifdef DEBUG
+    m_path = path;
+#endif
 	m_fd = ::open(path.c_str(), O_RDONLY);
 
 	if (m_fd == -1)
