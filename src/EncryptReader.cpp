@@ -190,7 +190,7 @@ EncryptReader::EncryptReader(std::shared_ptr<Reader> reader, const char* passwor
 	m_aes_decrypt_key = NULL;
 	if (!SetupEncryptionV2(password))
 	{
-		throw io_error("Not encrypted");
+		throw io_error("Not encrypted or wrong password");
 	}
 }
 
