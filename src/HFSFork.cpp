@@ -105,7 +105,8 @@ int32_t HFSFork::read(void* buf, int32_t count, uint64_t offset)
 		//std::cout << "This extent holds " << m_extents[extent].blockCount * uint64_t(blockSize) << " bytes\n";	
 		//std::cout << "Reading " << thistime << " from block: " << startBlock << ", block size: " << blockSize <<  std::endl;
 		volumeOffset = m_extents[extent].startBlock * uint64_t(blockSize) + offsetInExtent;
-		
+		//std::cout << "volumeOffset " << volumeOffset << std::endl;
+
 		reallyRead = m_volume->m_reader->read((char*)buf + read, thistime, volumeOffset);
 		assert(reallyRead <= thistime);
 		
