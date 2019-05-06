@@ -37,7 +37,10 @@ private:
 	void appendNameAndHFSPlusCatalogFileOrFolderFromLeafForParentId(std::shared_ptr<HFSBTreeNode> leafNodePtr, HFSCatalogNodeID cnid, std::map<std::string, std::shared_ptr<HFSPlusCatalogFileOrFolder>>& map);
 	void appendNameAndHFSPlusCatalogFileOrFolderFromLeafForParentIdAndName(std::shared_ptr<HFSBTreeNode> leafNodePtr, HFSCatalogNodeID cnid, const std::string& name, std::map<std::string, std::shared_ptr<HFSPlusCatalogFileOrFolder>>& map);
 
-static int caseInsensitiveComparator(const Key* indexKey, const Key* desiredKey);
+    int countDirectory(HFSCatalogNodeID id, uint32_t* fileAndFolderCount);
+    void incrementCountLeafForParentId(std::shared_ptr<HFSBTreeNode> leafNodePtr, HFSCatalogNodeID cnid, uint32_t* fileAndFolderCount);
+
+	static int caseInsensitiveComparator(const Key* indexKey, const Key* desiredKey);
 	static int caseSensitiveComparator(const Key* indexKey, const Key* desiredKey);
 	static int idOnlyComparator(const Key* indexKey, const Key* desiredKey);
 	static void fixEndian(HFSPlusCatalogFileOrFolder& ff);
