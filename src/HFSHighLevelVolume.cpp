@@ -340,6 +340,10 @@ void HFSHighLevelVolume::hfs_nativeToStat(const HFSPlusCatalogFileOrFolder& ff, 
 		if (S_ISCHR(stat->st_mode) || S_ISBLK(stat->st_mode))
 			stat->st_rdev = be(ff.file.permissions.special.rawDevice);
 	}
+    else
+    {
+        stat->st_size = stat->st_nlink*34; // TODO is '34' a constant, or should I get it from somewhere ?
+    }
 
 	if (!stat->st_mode)
 	{
