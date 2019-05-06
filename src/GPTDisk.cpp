@@ -23,16 +23,24 @@ GPTDisk::GPTDisk(std::shared_ptr<Reader> protectiveMBR, std::shared_ptr<Reader> 
 
 bool GPTDisk::isGPTDisk(std::shared_ptr<Reader> reader)
 {
-	ProtectiveMBR mbr;
-	if (reader->read(&mbr, sizeof(mbr), 0) != sizeof(mbr))
-		return false;
-	
-	if (mbr.signature != MBR_SIGNATURE)
-		return false;
-	if (mbr.partitions[0].type != MPT_GPT_FAKE_TYPE)
-		return false;
+//    ProtectiveMBR mbr;
+//    if (reader->read(&mbr, sizeof(mbr), 0) != sizeof(mbr))
+//        return false;
+//
+//    if (mbr.signature != MBR_SIGNATURE)
+//        return false;
+//    if (mbr.partitions[0].type != MPT_GPT_FAKE_TYPE)
+//        return false;
+//
+//    return true;
+//
+ 
+    uint64_t offset = 512;
+    GPTHeader header;
+    if ( reader->read(&header, sizeof(header), offset) != sizeof(header) )
+        return false;
+    return strncmp(header.signature, "EFI PART", 8) == 0;
 
-	return true;
 }
 
 std::string GPTDisk::makeGUID(const GPT_GUID& guid)
@@ -66,9 +74,17 @@ void GPTDisk::loadPartitions(std::shared_ptr<Reader> table)
 		offset = 0;
 	else
 	{
-		offset = 2*512;
+        offset = 512;
+        GPTHeader header;
+        rd = m_reader->read(&header, sizeof(header), offset);
+        if ( strncmp(header.signature, "EFI PART", 8) != 0 )
+            throw new io_error("Cannot find EFI PART");
+
+        offset += 512;
 		table = m_reader;
 	}
+    
+    
 
 	rd = table->read(part, sizeof(part), offset);
 
