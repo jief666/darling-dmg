@@ -207,6 +207,7 @@ void EncryptReader::compute_iv(uint32_t blkid, uint8_t *iv)
 	//HMAC(EVP_sha1(), m_hmacsha1_key, sizeof(m_hmacsha1_key), (const unsigned char *) &blkid, sizeof(blkid), mdResultOpenSsl, &mdLenOpenSsl);
 	DarlingDMGCrypto_HMAC(m_hmacsha1_key, sizeof(m_hmacsha1_key), (const unsigned char *) &blkid, sizeof(blkid), mdResultOpenSsl, &mdLenOpenSsl);
 	memcpy(iv, mdResultOpenSsl, CIPHER_BLOCKSIZE); // TODO avoid memory copy
+//printf("compute_iv chunk_no %x iv : %x %x %x %x\n", blkid, iv[0], iv[1], iv[2], iv[4]);
 }
 
 void EncryptReader::decrypt_chunk(void *crypted_buffer, void* outputBuffer, uint32_t blkid)
@@ -227,9 +228,9 @@ int32_t EncryptReader::read(void* outputBuffer, int32_t size2, uint64_t off)
 	uint8_t *bdata = reinterpret_cast<uint8_t *>(outputBuffer);
 	int32_t bytesLeft = size2;
 
-	if (off & mask)
+	if (off & mask) // if offset is in a middle of a block
 	{
-		blkid = static_cast<uint32_t>(off / m_crypt_blocksize);
+    blkid = static_cast<uint32_t>( (off%m_reader->band_size()) / m_crypt_blocksize);
 
 		if ( m_reader->read(buffer, m_crypt_blocksize, m_crypt_offset + (off & ~mask)) != m_crypt_blocksize )
 			return int32_t(bdata - (uint8_t*)outputBuffer); // cast ok because it's not > size
@@ -249,7 +250,7 @@ int32_t EncryptReader::read(void* outputBuffer, int32_t size2, uint64_t off)
 
 	while (bytesLeft > m_crypt_blocksize)
 	{
-		blkid = static_cast<uint32_t>(off / m_crypt_blocksize);
+    blkid = static_cast<uint32_t>( (off%m_reader->band_size()) / m_crypt_blocksize);
 
 		if ( m_reader->read(buffer, m_crypt_blocksize, m_crypt_offset + (off & ~mask)) != m_crypt_blocksize ) // TODO can we remove & ~mask ?
 			return int32_t(bdata - (uint8_t*)outputBuffer); // cast ok because it's not > size
@@ -263,7 +264,7 @@ int32_t EncryptReader::read(void* outputBuffer, int32_t size2, uint64_t off)
 		bytesLeft -= rd_len;
 	}
 
-	blkid = static_cast<uint32_t>(off / m_crypt_blocksize);
+	blkid = static_cast<uint32_t>( (off%m_reader->band_size()) / m_crypt_blocksize);
 
 	if ( m_reader->read(buffer, m_crypt_blocksize, m_crypt_offset + (off & ~mask)) != m_crypt_blocksize ) // TODO can we remove & ~mask ?
 		return int32_t(bdata - (uint8_t*)outputBuffer); // cast ok because it's not > size
