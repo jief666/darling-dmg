@@ -230,7 +230,7 @@ int32_t EncryptReader::read(void* outputBuffer, int32_t size2, uint64_t off)
 
 	if (off & mask) // if offset is in a middle of a block
 	{
-    blkid = static_cast<uint32_t>( (off%m_reader->band_size()) / m_crypt_blocksize);
+		blkid = static_cast<uint32_t>( (off%m_reader->band_size()) / m_crypt_blocksize);
 
 		if ( m_reader->read(buffer, m_crypt_blocksize, m_crypt_offset + (off & ~mask)) != m_crypt_blocksize )
 			return int32_t(bdata - (uint8_t*)outputBuffer); // cast ok because it's not > size
@@ -250,7 +250,7 @@ int32_t EncryptReader::read(void* outputBuffer, int32_t size2, uint64_t off)
 
 	while (bytesLeft > m_crypt_blocksize)
 	{
-    blkid = static_cast<uint32_t>( (off%m_reader->band_size()) / m_crypt_blocksize);
+		blkid = static_cast<uint32_t>( (off%m_reader->band_size()) / m_crypt_blocksize);
 
 		if ( m_reader->read(buffer, m_crypt_blocksize, m_crypt_offset + (off & ~mask)) != m_crypt_blocksize ) // TODO can we remove & ~mask ?
 			return int32_t(bdata - (uint8_t*)outputBuffer); // cast ok because it's not > size
