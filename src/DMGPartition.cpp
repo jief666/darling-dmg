@@ -15,14 +15,17 @@ static const int SECTOR_SIZE = 512;
 DMGPartition::DMGPartition(std::shared_ptr<Reader> disk, BLKXTable* table)
 : m_disk(disk), m_table(table)
 {
+    BLKXRun* runs = (BLKXRun*) (  (uint8_t*)m_table+sizeof(*m_table)  );
 	for (uint32_t i = 0; i < be(m_table->blocksRunCount); i++)
 	{
-		RunType type = RunType(be(m_table->runs[i].type));
+//        RunType type = RunType(be(m_table->runs[i].type));
+        RunType type = RunType(be(runs[i].type));
 		if (type == RunType::Comment || type == RunType::Terminator)
 			continue;
 		
-		m_sectors[be(m_table->runs[i].sectorStart)] = i;
-		
+//        m_sectors[be(m_table->runs[i].sectorStart)] = i;
+        m_sectors[be(runs[i].sectorStart)] = i;
+
 #ifdef DEBUG
 //        std::cout << "Sector " << i << " has type 0x" << std::hex << uint32_t(type) << std::dec << ", starts at byte "
 //            << be(m_table->runs[i].sectorStart)*512l << ", compressed length: "
@@ -54,7 +57,9 @@ void DMGPartition::adviseOptimalBlock(uint64_t offset, uint64_t& blockStart, uin
 	
 	// Issue #22: empty areas may be larger than 2**31 (causing bugs in callers).
 	// Moreover, there is no such thing as "optimal block" in zero-filled areas.
-	RunType runType = RunType(be(m_table->runs[itRun->second].type));
+//    RunType runType = RunType(be(m_table->runs[itRun->second].type));
+    BLKXRun* runs = (BLKXRun*) (  (uint8_t*)m_table+sizeof(*m_table)  );
+	RunType runType = RunType(be(runs[itRun->second].type));
 	if (runType == RunType::ZeroFill || runType == RunType::Unknown || runType == RunType::Raw)
 		Reader::adviseOptimalBlock(offset, blockStart, blockEnd);
 }
@@ -95,7 +100,9 @@ int32_t DMGPartition::read(void* buf, int32_t count, uint64_t offset)
 
 int32_t DMGPartition::readRun(void* buf, int32_t runIndex, uint64_t offsetInSector, int32_t count)
 {
-	BLKXRun* run = &m_table->runs[runIndex];
+    BLKXRun* runs = (BLKXRun*) (  (uint8_t*)m_table+sizeof(*m_table)  );
+//    BLKXRun* run = &m_table->runs[runIndex];
+    BLKXRun* run = &runs[runIndex];
 	RunType runType = RunType(be(run->type));
 	
 	count = std::min<uint64_t>(count, uint64_t(be(run->sectorCount))*512 - offsetInSector);

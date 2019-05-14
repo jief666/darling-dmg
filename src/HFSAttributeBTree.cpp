@@ -1,7 +1,6 @@
 #include "HFSAttributeBTree.h"
 #include <cstring>
 #include <stdexcept>
-#include <unicode/unistr.h>
 #include "unichar.h"
 using icu::UnicodeString;
 HFSAttributeBTree::HFSAttributeBTree(std::shared_ptr<HFSFork> fork, std::shared_ptr<CacheZone> zone)
@@ -39,7 +38,7 @@ std::map<std::string, std::vector<uint8_t>> HFSAttributeBTree::getattr(HFSCatalo
 			if (be(data->recordType) != kHFSPlusAttrInlineData)
 				continue;
 			
-			vecData = std::vector<uint8_t>(data->attrData, &data->attrData[be(data->attrSize)]);
+			vecData = std::vector<uint8_t>((uint8_t*)data + sizeof(HFSPlusAttributeDataInline), (uint8_t*)data + sizeof(HFSPlusAttributeDataInline) + be(data->attrSize));
 			name = UnicharToString(be(recordKey->attrNameLength), recordKey->attrName);
 			
 			rv[name] = vecData;
@@ -51,10 +50,14 @@ std::map<std::string, std::vector<uint8_t>> HFSAttributeBTree::getattr(HFSCatalo
 
 bool HFSAttributeBTree::getattr(HFSCatalogNodeID cnid, const std::string& attrName, std::vector<uint8_t>& dataOut)
 {
+//if ( cnid == 47 && attrName == "xattr_0" ) {
+//printf("");
+//}
 	HFSPlusAttributeKey key;
 	std::shared_ptr<HFSBTreeNode> leafNodePtr;
-	UnicodeString ucAttrName = UnicodeString::fromUTF8(attrName);
-	
+//    UnicodeString ucAttrName = UnicodeString::fromUTF8(attrName);
+    UnicodeString ucAttrName = Utf8ToUnicodeString(attrName);
+
 	memset(&key, 0, sizeof(key));
 	key.fileID = htobe32(cnid);
 	
@@ -80,8 +83,9 @@ bool HFSAttributeBTree::getattr(HFSCatalogNodeID cnid, const std::string& attrNa
 			// process data
 			if (be(data->recordType) != kHFSPlusAttrInlineData)
 				continue;
-		
-			dataOut = std::vector<uint8_t>(data->attrData, &data->attrData[be(data->attrSize)]);
+      uint64_t b = be(data->attrSize);
+      uint8_t* a  = (uint8_t*)data + be(data->attrSize);
+			dataOut = std::vector<uint8_t>((uint8_t*)data + sizeof(HFSPlusAttributeDataInline), (uint8_t*)data + sizeof(HFSPlusAttributeDataInline) + be(data->attrSize));
 			return true;
 		}
 	}

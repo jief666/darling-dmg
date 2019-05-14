@@ -6,16 +6,42 @@
 #include <cassert>
 #include <iostream>
 using icu::UnicodeString;
-UConverter *g_utf16be;
+UConverter* g_utf16be;
+UConverter* g_utf8;
 
+#ifdef _MSC_VER
+static void InitConverter();
+class toto {
+public:
+    toto() { InitConverter();}
+};
+toto totoo;
+#else
 static void InitConverter() __attribute__((constructor));
-static void ExitConverter() __attribute__((destructor));
+#endif
+
+
+
+static void ExitConverter()
+#ifndef _MSC_VER
+            __attribute__((destructor))
+#endif
+;
+
+UnicodeString Utf8ToUnicodeString(const std::string& str2)
+{
+    UErrorCode error = U_ZERO_ERROR;
+    UnicodeString ustr2 = UnicodeString((char*)str2.data(), str2.length(), g_utf8, error);
+    assert(U_SUCCESS(error));
+    return ustr2;
+}
 
 std::string UnicharToString(uint16_t length, const unichar* string)
 {
 	std::string result;
 	UErrorCode error = U_ZERO_ERROR;
 
+    if ( !g_utf16be ) InitConverter();
 	UnicodeString str((char*) string, length*2, g_utf16be, error);
 	
 	assert(U_SUCCESS(error));
@@ -24,32 +50,49 @@ std::string UnicharToString(uint16_t length, const unichar* string)
 	return result;
 }
 
-bool EqualNoCase(const HFSString& str1, const std::string& str2)
+bool EqualNoCase(const HFSString& hfsStr1, const std::string& str2)
 {
-	UErrorCode error = U_ZERO_ERROR;
-	UnicodeString ustr = UnicodeString::fromUTF8(str2);
-	UnicodeString ustr2 = UnicodeString((char*)str1.string, be(str1.length)*2, g_utf16be, error);
-	
+    if (!g_utf16be) InitConverter();
+    UErrorCode error = U_ZERO_ERROR;
+//	UnicodeString ustr2 = UnicodeString::fromUTF8(str2); // this way doesn't work on Windows
+    UnicodeString ustr2 = UnicodeString((char*)str2.data(), str2.length(), g_utf8, error);
+    assert(U_SUCCESS(error));
+//std::string str2_2;
+//ustr2_2.toUTF8String(str2_2);
+//
+//std::string ustr2_;
+//ustr2.toUTF8String(ustr2_);
+//char buf[100];
+//ustr2.extract(0, 8, buf);
+	UnicodeString hfsUStr = UnicodeString((char*)hfsStr1.string, be(hfsStr1.length)*2, g_utf16be, error);
+//std::string hfsUStr_;
+//hfsUStr.toUTF8String(hfsUStr_);
+
 	assert(U_SUCCESS(error));
 	
-	return ustr.caseCompare(ustr2, 0) == 0;
+	return ustr2.caseCompare(hfsUStr, 0) == 0;
 }
 
-bool EqualCase(const HFSString& str1, const std::string& str2)
+bool EqualCase(const HFSString& hfsStr1, const std::string& str2)
 {
-	UErrorCode error = U_ZERO_ERROR;
-	UnicodeString ustr = UnicodeString::fromUTF8(str2);
-	UnicodeString ustr2 = UnicodeString((char*)str1.string, be(str1.length)*2, g_utf16be, error);
-	
+    if (!g_utf16be) InitConverter();
+    UErrorCode error = U_ZERO_ERROR;
+//    UnicodeString ustr2 = UnicodeString::fromUTF8(str2);
+    UnicodeString ustr2 = UnicodeString((char*)str2.data(), str2.length(), g_utf8, error);
+    assert(U_SUCCESS(error));
+	UnicodeString ustr1 = UnicodeString((char*)hfsStr1.string, be(hfsStr1.length)*2, g_utf16be, error);
 	assert(U_SUCCESS(error));
 	
-	return ustr == ustr2;
+	return ustr2 == ustr1;
 }
 
 uint16_t StringToUnichar(const std::string& in, unichar* out, size_t maxLength)
 {
-	UErrorCode error = U_ZERO_ERROR;
-	UnicodeString str = UnicodeString::fromUTF8(in);
+    if (!g_utf16be) InitConverter();
+    UErrorCode error = U_ZERO_ERROR;
+//    UnicodeString str = UnicodeString::fromUTF8(in);
+    UnicodeString str = UnicodeString((char*)in.data(), in.length(), g_utf8, error);
+    assert(U_SUCCESS(error));
 	auto bytes = str.extract((char*) out, maxLength*sizeof(unichar), g_utf16be, error);
 	
 	assert(U_SUCCESS(error));
@@ -60,8 +103,9 @@ uint16_t StringToUnichar(const std::string& in, unichar* out, size_t maxLength)
 void InitConverter()
 {
 	UErrorCode error = U_ZERO_ERROR;
-	g_utf16be = ucnv_open("UTF-16BE", &error);
-	
+    g_utf16be = ucnv_open("UTF-16BE", &error);
+    assert(U_SUCCESS(error));
+    g_utf8 = ucnv_open("UTF-8", &error);
 	assert(U_SUCCESS(error));
 }
 

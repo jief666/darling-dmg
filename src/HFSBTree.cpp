@@ -20,8 +20,10 @@ HFSBTree::HFSBTree(std::shared_ptr<HFSFork> fork, std::shared_ptr<CacheZone> zon
 	
 	m_reader.reset(new CachedReader(m_fork, zone, cacheTag));
 	
-	if (m_reader->read(&desc0, sizeof(desc0), 0) != sizeof(desc0))
+	if (m_reader->read(&desc0, sizeof(desc0), 0) != sizeof(desc0)) {
+m_reader->read(&desc0, sizeof(desc0), 0);
 		throw io_error("Failed to read BTNodeDescriptor zero");
+    }
 	
 	if (desc0.kind != NodeKind::kBTHeaderNode)
 		throw io_error("Wrong kind of BTree header");

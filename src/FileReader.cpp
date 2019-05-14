@@ -13,7 +13,12 @@ FileReader::FileReader(const std::string& path)
 #ifdef DEBUG
     m_path = path;
 #endif
-	m_fd = ::open(path.c_str(), O_RDONLY);
+
+	m_fd = open(path.c_str(), O_RDONLY
+#ifdef _MSC_VER
+                              + _O_BINARY
+#endif
+           );
 
 	if (m_fd == -1)
 	{
@@ -27,7 +32,7 @@ FileReader::FileReader(const std::string& path)
 FileReader::~FileReader()
 {
 	if (m_fd != -1)
-		::close(m_fd);
+		close(m_fd);
 }
 
 int32_t FileReader::read(void* buf, int32_t count, uint64_t offset)
@@ -35,10 +40,10 @@ int32_t FileReader::read(void* buf, int32_t count, uint64_t offset)
 	if (m_fd == -1)
 		return -1;
 	
-	return ::pread(m_fd, buf, count, offset);
+	return pread(m_fd, (char*)buf, count, offset);
 }
 
 uint64_t FileReader::length()
 {
-	return ::lseek(m_fd, 0, SEEK_END);
+	return lseek(m_fd, 0, SEEK_END);
 }

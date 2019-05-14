@@ -18,8 +18,9 @@ public:
 	struct Key
 	{
 		uint16_t length;
-		char data[];
-	} __attribute__((packed));
+		//char data[];
+	}; /*__attribute__((packed));*/
+    static_assert(sizeof(struct Key) == 2, "sizeof(struct Key) == 2");
 	enum CompareResult
 	{
 		Smaller = -1, Equal = 0, Greater = 1

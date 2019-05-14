@@ -272,7 +272,9 @@ int HFSCatalogBTree::stat(std::string path, HFSPlusCatalogFileOrFolder* s)
 
 	elems.push_back(std::string());
 	split(path, '/', elems);
-
+if (path== "file.txt") {
+        printf("");
+}
 	for (size_t i = 0; i < elems.size(); i++)
 	{
 		std::string elem = elems[i];
@@ -352,10 +354,11 @@ void HFSCatalogBTree::appendNameAndHFSPlusCatalogFileOrFolderFromLeafForParentId
 		ff = leafNodePtr->getRecordData<HFSPlusCatalogFileOrFolder>(i);
 
 		recType = be(ff->folder.recordType);
-		//{
-			//std::string name = UnicharToString(recordKey->nodeName);
-			//std::cerr << "RecType " << int(recType) << ", ParentID: " << be(recordKey->parentID) << ", nodeName " << name << std::endl;
-		//}
+//std::string nameDebug = UnicharToString(recordKey->nodeName);
+//std::cerr << "RecType " << int(recType) << ", ParentID: " << be(recordKey->parentID) << ", nodeName " << nameDebug << std::endl;
+//if (name == "file.txt" && nameDebug== "file.txt") {
+//    printf("");
+//}
 
 		switch (recType)
 		{

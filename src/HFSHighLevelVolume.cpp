@@ -1,5 +1,6 @@
 #include "HFSHighLevelVolume.h"
 #include <stdint.h>
+#include <unistd.h>
 #include <cstring>
 #include "HFSAttributeBTree.h"
 #include "HFSZlibReader.h"
@@ -35,10 +36,10 @@ static bool string_endsWith(const std::string& str, const std::string& what)
 		return str.compare(str.size()-what.size(), what.size(), what) == 0;
 }
 
-std::map<std::string, struct stat> HFSHighLevelVolume::listDirectory(const std::string& path)
+std::map<std::string, struct FUSE_STAT> HFSHighLevelVolume::listDirectory(const std::string& path)
 {
 	std::map<std::string, std::shared_ptr<HFSPlusCatalogFileOrFolder>> contents;
-	std::map<std::string, struct stat> rv;
+	std::map<std::string, struct FUSE_STAT> rv;
 	int err;
 
 	err = m_tree->listDirectory(path, contents);
@@ -48,7 +49,7 @@ std::map<std::string, struct stat> HFSHighLevelVolume::listDirectory(const std::
 
 	for (auto it = contents.begin(); it != contents.end(); it++)
 	{
-		struct stat st;
+		struct FUSE_STAT st;
 		hfs_nativeToStat_decmpfs(*(it->second), &st, string_endsWith(it->first, RESOURCE_FORK_SUFFIX));
 
 		rv[it->first] = st;
@@ -57,13 +58,13 @@ std::map<std::string, struct stat> HFSHighLevelVolume::listDirectory(const std::
 	return rv;
 }
 
-struct stat HFSHighLevelVolume::stat(const std::string& path)
+struct FUSE_STAT HFSHighLevelVolume::stat(const std::string& path)
 {
 	HFSPlusCatalogFileOrFolder ff;
 	std::string spath = path;
 	int rv;
 	bool resourceFork = false;
-	struct stat stat;
+	struct FUSE_STAT stat;
 
 	if (string_endsWith(path, RESOURCE_FORK_SUFFIX))
 	{
@@ -80,7 +81,7 @@ struct stat HFSHighLevelVolume::stat(const std::string& path)
 	return stat;
 }
 
-void HFSHighLevelVolume::hfs_nativeToStat_decmpfs(const HFSPlusCatalogFileOrFolder& ff, struct stat* stat, bool resourceFork)
+void HFSHighLevelVolume::hfs_nativeToStat_decmpfs(const HFSPlusCatalogFileOrFolder& ff, struct FUSE_STAT* stat, bool resourceFork)
 {
 	assert(stat != nullptr);
 
@@ -147,10 +148,10 @@ std::shared_ptr<Reader> HFSHighLevelVolume::openFile(const std::string& path)
 		switch (DecmpfsCompressionType(hdr->compression_type))
 		{
 			case DecmpfsCompressionType::UncompressedInline:
-				file.reset(new MemoryReader(hdr->attr_bytes, hdr->uncompressed_size));
+				file.reset(new MemoryReader(((const uint8_t*)hdr)+sizeof(*hdr), hdr->uncompressed_size));
 				break;
 			case DecmpfsCompressionType::CompressedInline:
-				file.reset(new MemoryReader(hdr->attr_bytes, holder.size() - 16));
+				file.reset(new MemoryReader(((const uint8_t*)hdr)+sizeof(*hdr), holder.size() - 16));
 				file.reset(new HFSZlibReader(file, hdr->uncompressed_size, true));
 				break;
 			case DecmpfsCompressionType::CompressedResourceFork:
@@ -306,7 +307,7 @@ std::vector<uint8_t> HFSHighLevelVolume::getXattr(const std::string& path, const
 	return output;
 }
 
-void HFSHighLevelVolume::hfs_nativeToStat(const HFSPlusCatalogFileOrFolder& ff, struct stat* stat, bool resourceFork)
+void HFSHighLevelVolume::hfs_nativeToStat(const HFSPlusCatalogFileOrFolder& ff, struct FUSE_STAT* stat, bool resourceFork)
 {
 	assert(stat != nullptr);
 	memset(stat, 0, sizeof(*stat));
@@ -314,14 +315,22 @@ void HFSHighLevelVolume::hfs_nativeToStat(const HFSPlusCatalogFileOrFolder& ff, 
 #if defined(__APPLE__) && !defined(DARLING)
 	stat->st_birthtime = HFSCatalogBTree::appleToUnixTime(be(ff.file.createDate));
 #endif
-	stat->st_atime = HFSCatalogBTree::appleToUnixTime(be(ff.file.accessDate));
-	stat->st_mtime = HFSCatalogBTree::appleToUnixTime(be(ff.file.contentModDate));
-	stat->st_ctime = HFSCatalogBTree::appleToUnixTime(be(ff.file.attributeModDate));
-	stat->st_mode = be(ff.file.permissions.fileMode);
+#ifdef _MSC_VER
+	stat->st_atim.tv_sec = HFSCatalogBTree::appleToUnixTime(be(ff.file.accessDate));
+	stat->st_mtim.tv_sec = HFSCatalogBTree::appleToUnixTime(be(ff.file.contentModDate));
+	stat->st_ctim.tv_sec = HFSCatalogBTree::appleToUnixTime(be(ff.file.attributeModDate));
+#else
+	stat->st_atimespec.tv_sec = HFSCatalogBTree::appleToUnixTime(be(ff.file.accessDate));
+	stat->st_mtimespec.tv_sec = HFSCatalogBTree::appleToUnixTime(be(ff.file.contentModDate));
+	stat->st_ctimespec.tv_sec = HFSCatalogBTree::appleToUnixTime(be(ff.file.attributeModDate));
+#endif
+stat->st_mode = be(ff.file.permissions.fileMode);
 	stat->st_uid = be(ff.file.permissions.ownerID);
 	stat->st_gid = be(ff.file.permissions.groupID);
 	stat->st_ino = be(ff.file.fileID);
+#ifndef _MSC_VER
 	stat->st_blksize = 512;
+#endif
 	stat->st_nlink = be(ff.file.permissions.special.linkCount);
 
 	if (be(ff.file.recordType) == RecordType::kHFSPlusFileRecord)
@@ -329,12 +338,16 @@ void HFSHighLevelVolume::hfs_nativeToStat(const HFSPlusCatalogFileOrFolder& ff, 
 		if (!resourceFork)
 		{
 			stat->st_size = be(ff.file.dataFork.logicalSize);
+#ifndef _MSC_VER
 			stat->st_blocks = be(ff.file.dataFork.totalBlocks);
+#endif
 		}
 		else
 		{
 			stat->st_size = be(ff.file.resourceFork.logicalSize);
+#ifndef _MSC_VER
 			stat->st_blocks = be(ff.file.resourceFork.totalBlocks);
+#endif
 		}
 
 		if (S_ISCHR(stat->st_mode) || S_ISBLK(stat->st_mode))
@@ -374,7 +387,7 @@ decmpfs_disk_header* HFSHighLevelVolume::get_decmpfs(HFSCatalogNodeID cnid, std:
 	if (holder.size() < 16)
 		return nullptr;
 
-	hdr = (decmpfs_disk_header*) &holder[0];
+	hdr = (decmpfs_disk_header*) holder.data();
 	if (hdr->compression_magic != DECMPFS_MAGIC)
 		return nullptr;
 

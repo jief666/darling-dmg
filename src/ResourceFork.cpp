@@ -45,7 +45,7 @@ void ResourceFork::loadResources()
 	
 	listHeader.count = be(listHeader.count);
 	
-	int pos = header.mapOffset + mapHeader.listOffset + offsetof(HFSResourceList, items);
+	int pos = header.mapOffset + mapHeader.listOffset + sizeof(HFSResourceList);
 	for (int i = 0; i < listHeader.count+1; i++)
 	{
 		HFSResourceListItem item;
@@ -75,7 +75,8 @@ void ResourceFork::loadResources()
 			if (m_reader->read(&hdr, sizeof(hdr), loc.offset) != sizeof(hdr))
 				throw std::runtime_error("Short read of HFSResourceHeader");
 			
-			loc.offset += offsetof(HFSResourceHeader, data);
+//            loc.offset += offsetof(HFSResourceHeader, data);
+            loc.offset += sizeof(HFSResourceHeader);
 			loc.length = be(hdr.length);
 			
 			m_resources.insert({ res, loc });

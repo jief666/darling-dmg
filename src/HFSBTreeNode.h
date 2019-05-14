@@ -26,7 +26,7 @@ public:
 		#endif
 		m_descriptorData.resize(nodeSize);
 		
-		int32_t read = treeReader->read(&m_descriptorData[0], m_descriptorData.size(), nodeSize*nodeIndex);
+		int32_t read = treeReader->read(m_descriptorData.data(), m_descriptorData.size(), nodeSize*nodeIndex);
 		if (read < nodeSize)
 			throw std::runtime_error("Short read of BTree node. "+std::to_string(read)+" bytes read instead of "+std::to_string(nodeSize));
 
@@ -126,6 +126,10 @@ public:
 		{
 			return m_node->getRecordKey<KeyType>(m_index);
 		}
+		KeyType* operator*() const
+		{
+			return m_node->getRecordKey<KeyType>(m_index);
+		}
 		RecordIterator& operator++()
 		{
 			m_index++;
@@ -191,7 +195,7 @@ private:
 	{
 		if (m_descriptorData.size()) // required check!
 	{
-		m_descriptor = reinterpret_cast<BTNodeDescriptor*>(&m_descriptorData[0]);
+		m_descriptor = reinterpret_cast<BTNodeDescriptor*>(m_descriptorData.data());
 			m_firstRecordOffset = reinterpret_cast<uint16_t*>(descPtr() + m_descriptorData.size() - sizeof(uint16_t));
 		}else{
 			m_descriptor = nullptr;

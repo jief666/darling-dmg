@@ -20,7 +20,7 @@ struct decmpfs_disk_header
 	uint32_t compression_magic;
 	uint32_t compression_type;
 	uint64_t uncompressed_size;
-	unsigned char attr_bytes[0];
+//    unsigned char attr_bytes[0];
 };
 #pragma pack()
 

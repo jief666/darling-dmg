@@ -21,7 +21,7 @@ along with hdimount.  If not, see <http://www.gnu.org/licenses/>.
 #include <unistd.h>
 #include <inttypes.h> // for strtoumax
 #include <fcntl.h> // open, read, close...
-#include <arpa/inet.h>
+//#include <arpa/inet.h>
 #include <limits.h>
 
 #include "DarlingDMGCrypto.h"
@@ -148,7 +148,8 @@ bool EncryptReader::SetupEncryptionV2(const char* password)
 		DarlingDMGCrypto_PKCS5_PBKDF2_HMAC_SHA1(password, strlen(password), (unsigned char*)keydata->salt, be(keydata->salt_len), be(keydata->iteration_count), sizeof(derived_key), derived_key);
 
 		uint32_t blob_len = be(keydata->encr_key_blob_size);
-		uint8_t blob[blob_len]; // /* result of the decryption operation shouldn't be bigger than ciphertext */
+//		uint8_t blob[blob_len]; // /* result of the decryption operation shouldn't be bigger than ciphertext */
+		uint8_t* blob = (uint8_t*)alloca(blob_len); // /* result of the decryption operation shouldn't be bigger than ciphertext */
 
 //		EVP_CIPHER_CTX ctx;
 		int outlen, tmplen;
@@ -203,11 +204,11 @@ void EncryptReader::compute_iv(uint32_t blkid, uint8_t *iv)
 {
 	blkid = be(blkid);
 	unsigned char mdResultOpenSsl[MD_LENGTH];
-	unsigned int mdLenOpenSsl;
+	unsigned int mdLenOpenSsl = MD_LENGTH;
 	//HMAC(EVP_sha1(), m_hmacsha1_key, sizeof(m_hmacsha1_key), (const unsigned char *) &blkid, sizeof(blkid), mdResultOpenSsl, &mdLenOpenSsl);
 	DarlingDMGCrypto_HMAC(m_hmacsha1_key, sizeof(m_hmacsha1_key), (const unsigned char *) &blkid, sizeof(blkid), mdResultOpenSsl, &mdLenOpenSsl);
 	memcpy(iv, mdResultOpenSsl, CIPHER_BLOCKSIZE); // TODO avoid memory copy
-//printf("compute_iv chunk_no %x iv : %x %x %x %x\n", blkid, iv[0], iv[1], iv[2], iv[4]);
+//printf("EncryptReader::compute_iv chunk_no %x iv : %x %x %x %x\n", blkid, iv[0], iv[1], iv[2], iv[4]);
 }
 
 void EncryptReader::decrypt_chunk(void *crypted_buffer, void* outputBuffer, uint32_t blkid)
@@ -220,8 +221,11 @@ void EncryptReader::decrypt_chunk(void *crypted_buffer, void* outputBuffer, uint
 
 int32_t EncryptReader::read(void* outputBuffer, int32_t size2, uint64_t off)
 {
-	uint8_t buffer[m_crypt_blocksize];
-	uint8_t outputBufferTmp[m_crypt_blocksize];
+//printf("EncryptReader::read size=%ld %llu\n", size2, off);
+    //	uint8_t buffer[m_crypt_blocksize];
+	uint8_t* buffer = (uint8_t*)alloca(m_crypt_blocksize);
+//	uint8_t outputBufferTmp[m_crypt_blocksize];
+	uint8_t* outputBufferTmp = (uint8_t*)alloca(m_crypt_blocksize);
 	uint64_t mask = m_crypt_blocksize - 1;
 	uint32_t blkid;
 	int32_t rd_len;

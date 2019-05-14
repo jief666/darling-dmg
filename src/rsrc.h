@@ -19,7 +19,7 @@ struct HFSResourceForkHeader
 struct HFSResourceHeader
 {
 	uint32_t length;
-	uint8_t data[];
+//    uint8_t data[];
 };
 
 struct HFSResourceMapHeader
@@ -44,7 +44,7 @@ struct HFSResourceListItem
 struct HFSResourceList
 {
 	uint16_t count; // contains count - 1
-	HFSResourceListItem items[];
+//    HFSResourceListItem items[]; // Microsoft doesn't like zero sized array
 };
 
 struct HFSResourcePointer

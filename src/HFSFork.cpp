@@ -16,6 +16,7 @@ HFSFork::HFSFork(HFSVolume* vol, const HFSPlusForkData& fork, HFSCatalogNodeID c
 		if (elem.blockCount > 0)
 			m_extents.push_back(HFSPlusExtentDescriptor{ be(elem.startBlock), be(elem.blockCount) });
 	}
+//printf("Fork logical size %llu\n", length());
 }
 
 uint64_t HFSFork::length()

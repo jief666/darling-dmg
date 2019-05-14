@@ -3,6 +3,9 @@
 #include <string>
 #include "hfsplus.h"
 #include "be.h"
+#include <unicode/unistr.h>
+
+icu_64::UnicodeString Utf8ToUnicodeString(const std::string& str2);
 
 std::string UnicharToString(uint16_t length, const unichar* string);
 bool EqualNoCase(const HFSString& str1, const std::string& str2);

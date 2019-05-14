@@ -111,6 +111,7 @@ struct BTNodeDescriptor
 	uint16_t numRecords;
 	uint16_t reserved;
 };
+static_assert( sizeof(BTNodeDescriptor) == 13 + sizeof(NodeKind), "Bug");
 
 enum class KeyCompareType : uint8_t
 {
@@ -195,6 +196,7 @@ struct FileInfo
 //    int32_t putAwayFolderID;
 //};
 // looking in Apple Source, this is the modern definition of ExtendedFileInfo
+//__pragma(pack(push, 1))
 struct ExtendedFileInfo
 {
 	uint32_t document_id;
@@ -202,7 +204,9 @@ struct ExtendedFileInfo
 	uint16_t extended_flags;
 	uint16_t reserved2;
 	uint32_t write_gen_counter;
-} __attribute__((aligned(2), packed));
+} /*__attribute__((aligned(2), packed))*/;
+//__pragma(pack(pop))
+static_assert(sizeof(ExtendedFileInfo) == 16, "sizeof(ExtendedFileInfo) != 16");
 
 struct FolderInfo
 {
@@ -221,6 +225,7 @@ struct FolderInfo
 //    int32_t putAwayFolderID;
 //};
 // looking in Apple Source, this is the modern definition of ExtendedFolderInfo
+//__pragma(pack(push, 1))
 struct ExtendedFolderInfo
 {
 	uint32_t document_id;
@@ -228,7 +233,9 @@ struct ExtendedFolderInfo
 	uint16_t extended_flags;
 	uint16_t reserved3;
 	uint32_t write_gen_counter;
-} __attribute__((aligned(2), packed));
+} /*__attribute__((aligned(2), packed))*/;
+//__pragma(pack(pop))
+static_assert(sizeof(ExtendedFolderInfo) == 16, "sizeof(ExtendedFileInfo) != 16");
 
 struct HFSPlusCatalogFolder
 {
@@ -317,7 +324,7 @@ struct HFSPlusAttributeDataInline
 	uint32_t recordType; // kHFSPlusAttrInlineData
 	uint64_t reserved;
 	uint32_t attrSize;
-	uint8_t attrData[];
+//	uint8_t* attrData; // Not using [] because of microsoft. 
 };
 
 // File type and creator for symlink

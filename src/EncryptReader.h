@@ -17,7 +17,6 @@ along with hdimount.  If not, see <http://www.gnu.org/licenses/>.
 #include <vector>
 #include <memory> // for shared_ptr
 #include "DarlingDMGCrypto.h"
-//#include <openssl/aes.h>
 
 #include "Reader.h"
 

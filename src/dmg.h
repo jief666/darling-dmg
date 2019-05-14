@@ -134,7 +134,7 @@ struct BLKXTable
 	UDIFChecksum checksum;
 	
 	uint32_t blocksRunCount;
-	BLKXRun runs[0];
+//    BLKXRun* runs; // microsoft doesn't like zero sized array
 };
 
 #pragma pack()
