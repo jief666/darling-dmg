@@ -1,6 +1,6 @@
 #include "DMGDecompressor.h"
-#include <zlib.h>
-#include <bzlib.h>
+#include "../../../lib/zlib-1.2.11/zlib.h"
+#include "../../../lib/bzip2-1.0.6/bzlib.h"
 #ifdef COMPILE_WITH_LZFSE
 	#include <lzfse.h>
 #endif

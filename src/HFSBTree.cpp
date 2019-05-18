@@ -2,7 +2,6 @@
 #include <stdexcept>
 #include "be.h"
 #include "hfsplus.h"
-#include "unichar.h"
 #include <iostream>
 #include <cstring>
 #include <set>
@@ -10,6 +9,9 @@
 #include "HFSBTreeNode.h"
 #include "CacheZone.h"
 #include "exceptions.h"
+
+#include "../../conversion/fast_unicode_compare_apple.h"
+#include "../../conversion/utf816Conversion.h"
 
 HFSBTree::HFSBTree(std::shared_ptr<HFSFork> fork, std::shared_ptr<CacheZone> zone, const char* cacheTag)
 : m_fork(fork)

@@ -1,8 +1,10 @@
 #include "HFSAttributeBTree.h"
 #include <cstring>
 #include <stdexcept>
-#include "unichar.h"
-using icu::UnicodeString;
+
+#include "../../conversion/fast_unicode_compare_apple.h"
+#include "../../conversion/utf816Conversion.h"
+
 HFSAttributeBTree::HFSAttributeBTree(std::shared_ptr<HFSFork> fork, std::shared_ptr<CacheZone> zone)
 : HFSBTree(fork, zone, "Attribute")
 {
@@ -39,8 +41,8 @@ std::map<std::string, std::vector<uint8_t>> HFSAttributeBTree::getattr(HFSCatalo
 				continue;
 			
 			vecData = std::vector<uint8_t>((uint8_t*)data + sizeof(HFSPlusAttributeDataInline), (uint8_t*)data + sizeof(HFSPlusAttributeDataInline) + be(data->attrSize));
-			name = UnicharToString(be(recordKey->attrNameLength), recordKey->attrName);
-			
+			size_t len = utf16BE_to_utf8(recordKey->attrName, &name);
+
 			rv[name] = vecData;
 		}
 	}
@@ -56,13 +58,16 @@ bool HFSAttributeBTree::getattr(HFSCatalogNodeID cnid, const std::string& attrNa
 	HFSPlusAttributeKey key;
 	std::shared_ptr<HFSBTreeNode> leafNodePtr;
 //    UnicodeString ucAttrName = UnicodeString::fromUTF8(attrName);
-    UnicodeString ucAttrName = Utf8ToUnicodeString(attrName);
+//    UnicodeString ucAttrName = Utf8ToUnicodeString(attrName);
+//    int ucAttrNameAllocatedSize = attrName.size()*2;
+//    uint16_t* ucAttrName = (uint16_t*)alloca(ucAttrNameAllocatedSize);
+    utf8_to_utf16BE(attrName, &key.attrName);
 
-	memset(&key, 0, sizeof(key));
+//    memset(&key, 0, sizeof(key));
 	key.fileID = htobe32(cnid);
 	
-	key.attrNameLength = StringToUnichar(attrName, key.attrName, sizeof(key.attrName));
-	key.attrNameLength = htobe16(key.attrNameLength);
+//    key.attrName.length = StringToUnichar(attrName, key.attrName, sizeof(key.attrName));
+//    key.attrName.length = htobe16(ucAttrNameSize);
 	
 	leafNodePtr = findLeafNode((Key*) &key, cnidAttrComparator);
 	if (!leafNodePtr)
@@ -74,17 +79,19 @@ bool HFSAttributeBTree::getattr(HFSCatalogNodeID cnid, const std::string& attrNa
 		HFSPlusAttributeKey* recordKey = leafNode.getRecordKey<HFSPlusAttributeKey>(i);
 		HFSPlusAttributeDataInline* data;
 		
-		UnicodeString recAttrName((char*)recordKey->attrName, be(recordKey->attrNameLength)*2, "UTF-16BE");
+//        UnicodeString recAttrName((char*)recordKey->attrName, be(recordKey->attrName.length)*2, "UTF-16BE");
 
-		if (be(recordKey->fileID) == cnid && recAttrName == ucAttrName)
+        if (be(recordKey->fileID) == cnid && FastUnicodeCompare(recordKey->attrName, key.attrName) == 0 )
 		{
 			data = leafNode.getRecordData<HFSPlusAttributeDataInline>(i);
 
 			// process data
 			if (be(data->recordType) != kHFSPlusAttrInlineData)
 				continue;
-      uint64_t b = be(data->attrSize);
-      uint8_t* a  = (uint8_t*)data + be(data->attrSize);
+#ifdef DEBUG
+  uint64_t b = be(data->attrSize);
+  uint8_t* a  = (uint8_t*)data + be(data->attrSize);
+#endif
 			dataOut = std::vector<uint8_t>((uint8_t*)data + sizeof(HFSPlusAttributeDataInline), (uint8_t*)data + sizeof(HFSPlusAttributeDataInline) + be(data->attrSize));
 			return true;
 		}
@@ -106,12 +113,18 @@ int HFSAttributeBTree::cnidAttrComparator(const Key* indexKey, const Key* desire
 		return -1;
 	else
 	{
-		UnicodeString desiredName, indexName;
-		
-		desiredName = UnicodeString((char*)desiredAttributeKey->attrName, be(desiredAttributeKey->attrNameLength)*2, "UTF-16BE");
-		indexName = UnicodeString((char*)indexAttributeKey->attrName, be(indexAttributeKey->attrNameLength)*2, "UTF-16BE");
-		
-		return indexName.compare(desiredName);
+//        UnicodeString desiredName, indexName;
+//        
+//        desiredName = UnicodeString((char*)desiredAttributeKey->attrName, be(desiredAttributeKey->attrName.length)*2, "UTF-16BE");
+//        indexName = UnicodeString((char*)indexAttributeKey->attrName, be(indexAttributeKey->attrName.length)*2, "UTF-16BE");
+#ifdef DEBUG
+  std::string desiredName_utf8 = toUtf8(*desiredAttributeKey);
+  std::string indexName_utf8 = toUtf8(*indexAttributeKey);
+#endif
+
+        int rv = FastUnicodeCompare(indexAttributeKey->attrName, desiredAttributeKey->attrName);
+        return rv;
+//        return indexName.compare(desiredName);
 	}
 }
 

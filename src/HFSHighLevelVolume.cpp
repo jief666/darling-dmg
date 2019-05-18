@@ -315,7 +315,7 @@ void HFSHighLevelVolume::hfs_nativeToStat(const HFSPlusCatalogFileOrFolder& ff, 
 #if defined(__APPLE__) && !defined(DARLING)
 	stat->st_birthtime = HFSCatalogBTree::appleToUnixTime(be(ff.file.createDate));
 #endif
-#ifdef _MSC_VER
+#if defined(__linux__) || defined(WIN32)
 	stat->st_atim.tv_sec = HFSCatalogBTree::appleToUnixTime(be(ff.file.accessDate));
 	stat->st_mtim.tv_sec = HFSCatalogBTree::appleToUnixTime(be(ff.file.contentModDate));
 	stat->st_ctim.tv_sec = HFSCatalogBTree::appleToUnixTime(be(ff.file.attributeModDate));

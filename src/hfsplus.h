@@ -28,6 +28,12 @@ struct HFSString
 	unichar string[255];
 };
 
+struct HFSString127
+{
+    uint16_t length;
+    unichar string[127];
+};
+
 struct HFSPlusBSDInfo
 {
 	uint32_t ownerID;
@@ -169,14 +175,14 @@ enum class RecordType : uint16_t
 	kHFSPlusFileThreadRecord    = 0x0004
 };
 
-struct Point
+struct Point_
 {
-	int16_t v, h;
+    int16_t v, h;
 };
 
-struct Rect
+struct Rect_
 {
-	int16_t top, left, bottom, right;
+    int16_t top, left, bottom, right;
 };
 
 struct FileInfo
@@ -184,7 +190,7 @@ struct FileInfo
 	uint32_t fileType;
 	uint32_t fileCreator;
 	uint16_t finderFlags;
-	Point location;
+	Point_ location;
 	uint16_t reservedField;
 };
 
@@ -210,9 +216,9 @@ static_assert(sizeof(ExtendedFileInfo) == 16, "sizeof(ExtendedFileInfo) != 16");
 
 struct FolderInfo
 {
-	Rect windowBounds;
+	Rect_ windowBounds;
 	uint16_t finderFlags;
-	Point location;
+	Point_ location;
 	uint16_t reservedField;
 };
 
@@ -308,10 +314,11 @@ struct HFSPlusAttributeKey
 	uint16_t padding;
 	HFSCatalogNodeID fileID;
 	uint32_t startBlock; // first allocation block number for extents
-	uint16_t attrNameLength;
-	uint16_t attrName[127];
+//    uint16_t attrName.length;
+//    uint16_t attrName[127];
+    HFSString127 attrName;
 };
-
+static_assert( sizeof(HFSPlusAttributeKey) == 268, "sizeof(HFSPlusAttributeKey) != 268" );
 enum
 {
 	kHFSPlusAttrInlineData  = 0x10,

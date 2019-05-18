@@ -61,7 +61,7 @@ void AppleDisk::load(std::shared_ptr<Reader> readerPM)
 	}
 	
 #ifdef DEBUG
-	std::cout << "Block size: " << blockSize << std::endl;
+//    std::cout << "Block size: " << blockSize << std::endl;
 #endif
 	
 	for (int i = 0; i < 63; i++)
@@ -84,7 +84,7 @@ void AppleDisk::load(std::shared_ptr<Reader> readerPM)
 			continue;
 		
 #ifdef DEBUG
-		std::cout << "Partition #" << (i+1) << " type: " << dpme.dpme_type << std::endl;
+//        std::cout << "Partition #" << (i+1) << " type: " << dpme.dpme_type << std::endl;
 #endif
 		part.name = dpme.dpme_name;
 		part.type = dpme.dpme_type;
@@ -92,7 +92,7 @@ void AppleDisk::load(std::shared_ptr<Reader> readerPM)
 		part.size = uint64_t(be(dpme.dpme_pblocks)) * blockSize;
 
 #ifdef DEBUG
-		std::cout << "\tBlock start: " << uint64_t(be(dpme.dpme_pblock_start)) << std::endl;
+//        std::cout << "\tBlock start: " << uint64_t(be(dpme.dpme_pblock_start)) << std::endl;
 #endif
 		
 		m_partitions.push_back(part);
