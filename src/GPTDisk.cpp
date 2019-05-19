@@ -116,6 +116,6 @@ void GPTDisk::loadPartitions(std::shared_ptr<Reader> table)
 std::shared_ptr<Reader> GPTDisk::readerForPartition(int index)
 {
 	const Partition& part = m_partitions.at(index);
-	return std::shared_ptr<Reader>(new SubReader(m_reader, part.offset, part.size));
+	return std::make_shared<SubReader>(m_reader, part.offset, part.size);
 }
 

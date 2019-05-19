@@ -452,6 +452,7 @@ void HFSCatalogBTree::appendNameAndHFSPlusCatalogFileOrFolderFromLeafForParentId
 				break;
 		}
 	}
+    free(res);
 }
 
 time_t HFSCatalogBTree::appleToUnixTime(uint32_t apple)

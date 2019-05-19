@@ -16,8 +16,8 @@ static const int SECTOR_SIZE = 512;
 DMGPartition::DMGPartition(std::shared_ptr<Reader> disk, BLKXTable* table)
 : m_disk(disk)/*, m_table(table)*/
 {
-    m_tableDataStart = table->dataStart;
-    m_tableSectorCount = table->sectorCount;
+    m_tableDataStart = be(table->dataStart);
+    m_tableSectorCount = be(table->sectorCount);
     
     BLKXRun* runs = (BLKXRun*) (  (uint8_t*)table+sizeof(*table)  );
 	for (uint32_t i = 0; i < be(table->blocksRunCount); i++)
@@ -54,27 +54,37 @@ void DMGPartition::adviseOptimalBlock(uint64_t offset, uint64_t& blockStart, uin
     // Issue #22: empty areas may be larger than 2**31 (causing bugs in callers).
     // Moreover, there is no such thing as "optimal block" in zero-filled areas.
     if (itRun2->type == RunType::ZeroFill || itRun2->type == RunType::Unknown || itRun2->type == RunType::Raw)
-        Reader::adviseOptimalBlock(offset, itRun2->blockStart, itRun2->blockEnd);
+        Reader::adviseOptimalBlock(offset, blockStart, blockEnd);
 }
 
 int32_t DMGPartition::read(void* buf, int32_t count, uint64_t offset)
 {
-    std::vector<DMGPartitionRun>::iterator itRun2 = std::upper_bound(m_runs.begin(), m_runs.end(), DMGPartitionRun(RunType::Comment, 0, offset / SECTOR_SIZE, 0, 0));
-    uint64_t offsetInSector = offset - itRun2->blockStart*SECTOR_SIZE;
-    int32_t done = 0;
+    if (count < 0)
+        throw io_error("DMGPartition::read count : 0");
+    if (offset >= length())
+        throw io_error("DMGPartition::read offset >= size");
 
+    if ( (uint64_t)count > length() - offset) {
+        count = uint32_t(length() - offset);   // length() - offset < nbytes => length() - offset < UINT32_MAX => safe cast
+    }
+
+    int32_t done = 0;
+    uint64_t offsetInSector = 0; // to silence warning 'maybe used uninitialized'
+    
 	while (done < count)
 	{
+        std::vector<DMGPartitionRun>::iterator itRun2 = std::upper_bound(m_runs.begin(), m_runs.end(), DMGPartitionRun(RunType::Comment, 0, (offset+done) / SECTOR_SIZE, 0, 0));
+        if ( itRun2 == m_runs.end() ) {
+            throw io_error(stringPrintf("DMGPartition::read : cannot find next run"));
+        }
+        if ( done == 0 )
+            offsetInSector = offset - itRun2->blockStart*SECTOR_SIZE;
+        
         int32_t thistime = readRun(((char*)buf) + done, *itRun2, offsetInSector, count-done);
         if (!thistime)
             throw io_error("Unexpected EOF from readRun");
-        
+        offsetInSector = 0;
         done += thistime;
-        itRun2 = std::upper_bound(m_runs.begin(), m_runs.end(), DMGPartitionRun(RunType::Comment, 0, (offset + done) / SECTOR_SIZE, 0, 0));
-        if ( itRun2 == m_runs.end() ) {
-            throw io_error(stringPrintf("DMGPartition::read : cannot find next run"));
-
-        }
 	}
 	
 	return done;

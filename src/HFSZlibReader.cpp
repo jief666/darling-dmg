@@ -156,9 +156,14 @@ int32_t HFSZlibReader::read(void* buf, int32_t count, uint64_t offset)
 {
 	int32_t done = 0;
 	
-	if (offset+count > m_uncompressedSize)
+    if (count < 0)
+        return 0;
+    if (offset >= length())
+        return 0;
+	if ( count > m_uncompressedSize - offset )
 		count = m_uncompressedSize - offset;
-	
+
+
 	while (done < count)
 	{
 		uint64_t runOffset = 0;

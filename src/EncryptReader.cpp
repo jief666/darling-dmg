@@ -172,12 +172,17 @@ bool EncryptReader::SetupEncryptionV2(const char* password)
 		memcpy(m_hmacsha1_key, blob+be(hdr->key_bits)/8, HMACSHA1_KEY_SIZE);
 		DarlingDMGCrypto_set_aes_decrypt_key(aes_key, be(hdr->key_bits), &m_aes_decrypt_key);
 
-		if (blob[blob_len - 1] < 1 || blob[blob_len - 1] > 8)
+		if (blob[blob_len - 1] < 1 || blob[blob_len - 1] > 8) {
+            free(m_aes_decrypt_key);
 			continue;
+        }
+        
 		blob_len -= blob[blob_len - 1];
 
-		if (memcmp(blob + blob_len - 5, "CKIE", 4))
+		if (memcmp(blob + blob_len - 5, "CKIE", 4)) {
+            free(m_aes_decrypt_key);
 			continue;
+        }
 
 		return true;
 	}

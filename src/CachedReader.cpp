@@ -23,8 +23,10 @@ int32_t CachedReader::read(void* buf, int32_t count, uint64_t offset)
 //	std::cout << "CachedReader::read(): offset=" << offset << ", count=" << count << std::endl;
 #endif
 
-	if (offset > length())
-		return 0;
+    if (offset > length())
+        return 0;
+    if (count <= 0)
+        return 0;
 	if (count > length() - offset)
 		count = length() - offset;
 	

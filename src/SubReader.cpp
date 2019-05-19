@@ -7,6 +7,8 @@ SubReader::SubReader(std::shared_ptr<Reader> parent, uint64_t offset, uint64_t s
 
 int32_t SubReader::read(void* buf, int32_t count, uint64_t offset)
 {
+    if ( count <= 0 )
+        return 0;
 	if (offset > m_size)
 		return 0;
 	if (offset+count > m_size)

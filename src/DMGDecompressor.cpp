@@ -155,7 +155,7 @@ int32_t DMGDecompressor_Zlib::decompress(void* output, int32_t count, int64_t of
 	int32_t done = 0;
 	
 #ifdef DEBUG
-	std::cout << "zlib: Asked to provide " << count << " bytes\n";
+//    std::cout << "zlib: Asked to provide " << count << " bytes\n";
 #endif
 
 	while (offset > 0)
