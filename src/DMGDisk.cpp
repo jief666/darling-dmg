@@ -95,86 +95,88 @@ void DMGDisk::loadKoly(const UDIFResourceFile& koly)
 		XMLDocument tixmlDoc;
 		XMLError tixmlError;
 		tixmlError = tixmlDoc.Parse(xmlData);
-		XMLNode * pRoot = tixmlDoc.FirstChild();
-		if ( !pRoot ) return; // TODO error message ?
-		XMLElement * pElementPList = tixmlDoc.FirstChildElement("plist");
-		if ( !pElementPList ) return;
-		XMLElement * pElementRootDict = pElementPList->FirstChildElement("dict");
-		if ( !pElementRootDict ) return;
-		XMLNode * pElementRootDictChildNote = pElementRootDict->FirstChild();
-		while (pElementRootDictChildNote) {
-			if ( pElementRootDictChildNote->Value() == std::string("key") ) {
-				if ( !pElementRootDictChildNote->ToElement() ) return;
-				if ( pElementRootDictChildNote->ToElement()->GetText() == std::string("resource-fork") ) {
-					XMLElement * pElementRsrcDict = pElementRootDictChildNote->NextSiblingElement();
-					if ( !pElementRsrcDict ) return;
-					if ( pElementRsrcDict->Value() == std::string("dict") ) {
-						// Iterate the rsrc dict. Should <key>blkx</key> + <array>...</array>
-						XMLNode * pElementRsrcDictChild = pElementRsrcDict->FirstChild();
-						while (pElementRsrcDictChild) {
-							if ( pElementRsrcDictChild->Value() == std::string("key") ) {
-								// We got a <key>, let's check it's a blkx
-								if ( !pElementRsrcDictChild->ToElement() ) return;
-								if ( pElementRsrcDictChild->ToElement()->GetText() == std::string("blkx") ) {
-									// We found a blkx. Next sibling must be a <array>
-									XMLElement * pElementBlkxArrayElement = pElementRsrcDictChild->NextSiblingElement();
-									if ( !pElementBlkxArrayElement ) return;
-									if ( pElementBlkxArrayElement->Value() == std::string("array") ) {
-										// We got the <array>. It's an array of dict, so let's iterate.
-										XMLNode * pElementBlkxArrayDict = pElementBlkxArrayElement->FirstChild();
-										while (pElementBlkxArrayDict) {
-											if ( pElementBlkxArrayDict->Value() == std::string("dict") ) {
+		if ( XML_SUCCESS == tixmlError ) {
+			XMLNode * pRoot = tixmlDoc.FirstChild();
+			if ( !pRoot ) return; // TODO error message ?
+			XMLElement * pElementPList = tixmlDoc.FirstChildElement("plist");
+			if ( !pElementPList ) return;
+			XMLElement * pElementRootDict = pElementPList->FirstChildElement("dict");
+			if ( !pElementRootDict ) return;
+			XMLNode * pElementRootDictChildNote = pElementRootDict->FirstChild();
+			while (pElementRootDictChildNote) {
+				if ( pElementRootDictChildNote->Value() == std::string("key") ) {
+					if ( !pElementRootDictChildNote->ToElement() ) return;
+					if ( pElementRootDictChildNote->ToElement()->GetText() == std::string("resource-fork") ) {
+						XMLElement * pElementRsrcDict = pElementRootDictChildNote->NextSiblingElement();
+						if ( !pElementRsrcDict ) return;
+						if ( pElementRsrcDict->Value() == std::string("dict") ) {
+							// Iterate the rsrc dict. Should <key>blkx</key> + <array>...</array>
+							XMLNode * pElementRsrcDictChild = pElementRsrcDict->FirstChild();
+							while (pElementRsrcDictChild) {
+								if ( pElementRsrcDictChild->Value() == std::string("key") ) {
+									// We got a <key>, let's check it's a blkx
+									if ( !pElementRsrcDictChild->ToElement() ) return;
+									if ( pElementRsrcDictChild->ToElement()->GetText() == std::string("blkx") ) {
+										// We found a blkx. Next sibling must be a <array>
+										XMLElement * pElementBlkxArrayElement = pElementRsrcDictChild->NextSiblingElement();
+										if ( !pElementBlkxArrayElement ) return;
+										if ( pElementBlkxArrayElement->Value() == std::string("array") ) {
+											// We got the <array>. It's an array of dict, so let's iterate.
+											XMLNode * pElementBlkxArrayDict = pElementBlkxArrayElement->FirstChild();
+											while (pElementBlkxArrayDict) {
+												if ( pElementBlkxArrayDict->Value() == std::string("dict") ) {
 
-												XMLElement* pElementBlkxName = getElementForKey(pElementBlkxArrayDict, "CFName");
-												if ( !pElementBlkxName  ||  strlen(pElementBlkxName->GetText()) == 0 ) {
-													pElementBlkxName = getElementForKey(pElementBlkxArrayDict, "Name");
-												}
-												if ( !pElementBlkxName  ||  strlen(pElementBlkxName->GetText()) == 0 ) {
-													throw io_error("Invalid XML data, partition Name key not found");
-												}
-
-												XMLElement* pElementBlkxID = getElementForKey(pElementBlkxArrayDict, "ID");
-												if ( !pElementBlkxID ) {
-													throw io_error("Invalid XML data, partition ID key not found");
-												}
-												int partID = std::atoi(pElementBlkxID->GetText());
-												Partition part;
-												if ( parseNameAndType(pElementBlkxName->GetText(), part.name, part.type) )
-												{
-													if ( pElementBlkxName  &&  strlen(pElementBlkxName->GetText()) > 0 ) {
-														XMLElement* pElementBlkxData = getElementForKey(pElementBlkxArrayDict, "Data");
-
-														if ( strlen(pElementBlkxData->GetText()) > 0 ) {
-															std::vector<uint8_t> data;
-															base64Decode(std::string(pElementBlkxData->GetText()), data);
-															BLKXTable* blkxTable = (BLKXTable*)data.data();
-															part.offset = be(blkxTable->firstSectorNumber) * 512;
-															part.size = be(blkxTable->sectorCount) * 512;
-															m_partitions.push_back(part);
-															m_partitionsBlkxTables.push_back(data);
-															if ( m_partitionIDs.find(partID) != m_partitionIDs.end() ) {
-																throw io_error("Invalid XML data, partition Name key not found");
-															}
-															m_partitionIDs.insert(std::make_pair(partID, m_partitions.size()-1));
-														}
+													XMLElement* pElementBlkxName = getElementForKey(pElementBlkxArrayDict, "CFName");
+													if ( !pElementBlkxName  ||  strlen(pElementBlkxName->GetText()) == 0 ) {
+														pElementBlkxName = getElementForKey(pElementBlkxArrayDict, "Name");
 													}
-												}else{
-	#ifdef DEBUG
-													fprintf(stderr, "Parsing name and type failed for : '%s'\n", pElementBlkxName->GetText());
-	#endif
+													if ( !pElementBlkxName  ||  strlen(pElementBlkxName->GetText()) == 0 ) {
+														throw io_error("Invalid XML data, partition Name key not found");
+													}
+
+													XMLElement* pElementBlkxID = getElementForKey(pElementBlkxArrayDict, "ID");
+													if ( !pElementBlkxID ) {
+														throw io_error("Invalid XML data, partition ID key not found");
+													}
+													int partID = std::atoi(pElementBlkxID->GetText());
+													Partition part;
+													if ( parseNameAndType(pElementBlkxName->GetText(), part.name, part.type) )
+													{
+														if ( pElementBlkxName  &&  strlen(pElementBlkxName->GetText()) > 0 ) {
+															XMLElement* pElementBlkxData = getElementForKey(pElementBlkxArrayDict, "Data");
+
+															if ( strlen(pElementBlkxData->GetText()) > 0 ) {
+																std::vector<uint8_t> data;
+																base64Decode(std::string(pElementBlkxData->GetText()), data);
+																BLKXTable* blkxTable = (BLKXTable*)data.data();
+																part.offset = be(blkxTable->firstSectorNumber) * 512;
+																part.size = be(blkxTable->sectorCount) * 512;
+																m_partitions.push_back(part);
+																m_partitionsBlkxTables.push_back(data);
+																if ( m_partitionIDs.find(partID) != m_partitionIDs.end() ) {
+																	throw io_error("Invalid XML data, partition Name key not found");
+																}
+																m_partitionIDs.insert(std::make_pair(partID, m_partitions.size()-1));
+															}
+														}
+													}else{
+		#ifdef DEBUG
+														fprintf(stderr, "Parsing name and type failed for : '%s'\n", pElementBlkxName->GetText());
+		#endif
+													}
 												}
+												pElementBlkxArrayDict = pElementBlkxArrayDict->NextSiblingElement();
 											}
-											pElementBlkxArrayDict = pElementBlkxArrayDict->NextSiblingElement();
 										}
 									}
 								}
+								pElementRsrcDictChild = pElementRsrcDictChild->NextSiblingElement();
 							}
-							pElementRsrcDictChild = pElementRsrcDictChild->NextSiblingElement();
 						}
 					}
 				}
+				pElementRootDictChildNote = pElementRootDictChildNote->NextSiblingElement();
 			}
-			pElementRootDictChildNote = pElementRootDictChildNote->NextSiblingElement();
 		}
 	}catch(...){
 		throw io_error(stringPrintf("Unknow error while parsing xml for koly block"));
@@ -213,7 +215,9 @@ bool DMGDisk::parseNameAndType(const std::string& nameAndType, std::string& name
 
 std::shared_ptr<Reader> DMGDisk::readerForPartition(int index)
 {
-    if ( index >= m_partitions.size() )
+    if ( index < 0 )
+        throw io_error(stringPrintf("readerForPartition : partition index can't be negative"));
+    if ( (unsigned int)index >= m_partitions.size() )
         throw io_error(stringPrintf("readerForPartition : requested partition %d doesn't exist. Only %zd partition is this DMG", index, m_partitions.size()));
 
 
@@ -223,7 +227,6 @@ std::shared_ptr<Reader> DMGDisk::readerForPartition(int index)
 //    if (be(table->firstSectorNumber)*512 == m_partitions[index].offset)
 //    {
         std::stringstream partName;
-        uint64_t l = m_reader->length();
         uint32_t data_offset = be(m_udif.fUDIFDataForkOffset);
 
         partName << "part-" << index;
