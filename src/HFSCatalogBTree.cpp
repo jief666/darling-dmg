@@ -252,7 +252,6 @@ void HFSCatalogBTree::incrementCountLeafForParentId(std::shared_ptr<HFSBTreeNode
 
 int HFSCatalogBTree::countDirectory(HFSCatalogNodeID id, uint32_t* fileAndFolderCount)
 {
-    int rv;
     std::vector<std::shared_ptr<HFSBTreeNode>> leaves;
     HFSPlusCatalogKey key;
     std::map<std::string, std::shared_ptr<HFSPlusCatalogFileOrFolder>> beContents;
@@ -315,9 +314,9 @@ int HFSCatalogBTree::stat(std::string path, HFSPlusCatalogFileOrFolder* s)
 
 	elems.push_back(std::string());
 	split(path, '/', elems);
-if (path== "utf8_names/ABCDEFGHIJKLMNOPQRSTUVWXYZÀÁÂÃÄÅÆÇÈÉÊËÌÍÎÏÐÑÒÓÔÕÖØÙÚÛÜÝÞĀĂĄĆĈĊČĎĐĒĔĖĘĚĜĞĠĢĤĦĨĪĬĮĲĴĶĹĻĽĿŁŃŅŇŊŌŎŐŒŔŖŘŚŜŞŠŢŤŦŨŪŬŮŰŲŴŶŸŹŻŽƁƂƄƆƇƉƊƋƎƏƐƑƓƔƖƗƘƜƝƟƠƢƤƧƩƬƮƯƱƲƳƵƷƸƼǄǅǇǈǊǋǍǏǑǓǕǗ") {
-        printf("");
-}
+//if (path== "utf8_names/ABCDEFGHIJKLMNOPQRSTUVWXYZÀÁÂÃÄÅÆÇÈÉÊËÌÍÎÏÐÑÒÓÔÕÖØÙÚÛÜÝÞĀĂĄĆĈĊČĎĐĒĔĖĘĚĜĞĠĢĤĦĨĪĬĮĲĴĶĹĻĽĿŁŃŅŇŊŌŎŐŒŔŖŘŚŜŞŠŢŤŦŨŪŬŮŰŲŴŶŸŹŻŽƁƂƄƆƇƉƊƋƎƏƐƑƓƔƖƗƘƜƝƟƠƢƤƧƩƬƮƯƱƲƳƵƷƸƼǄǅǇǈǊǋǍǏǑǓǕǗ") {
+//        printf("");
+//}
 	for (size_t i = 0; i < elems.size(); i++)
 	{
 		std::string elem = elems[i];

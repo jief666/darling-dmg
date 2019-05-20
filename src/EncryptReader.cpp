@@ -88,10 +88,6 @@ bool EncryptReader::isEncrypted(std::shared_ptr<Reader> reader)
 	std::vector<uint8_t> kdata;
 
 	const DmgCryptHeaderV2 *hdr;
-	const DmgKeyPointer *keyptr;
-	const DmgKeyData *keydata;
-	uint32_t no_of_keys;
-	uint32_t key_id;
 
 	reader->read(data, sizeof(data), 0);
 
@@ -148,24 +144,9 @@ bool EncryptReader::SetupEncryptionV2(const char* password)
 		DarlingDMGCrypto_PKCS5_PBKDF2_HMAC_SHA1(password, strlen(password), (unsigned char*)keydata->salt, be(keydata->salt_len), be(keydata->iteration_count), sizeof(derived_key), derived_key);
 
 		uint32_t blob_len = be(keydata->encr_key_blob_size);
-//		uint8_t blob[blob_len]; // /* result of the decryption operation shouldn't be bigger than ciphertext */
 		uint8_t* blob = (uint8_t*)alloca(blob_len); // /* result of the decryption operation shouldn't be bigger than ciphertext */
 
-//		EVP_CIPHER_CTX ctx;
-		int outlen, tmplen;
-//
-//		EVP_CIPHER_CTX_init(&ctx);
-//		EVP_DecryptInit_ex(&ctx, EVP_des_ede3_cbc(), NULL, derived_key, keydata->blob_enc_iv);
-//		if(!EVP_DecryptUpdate(&ctx, blob, &outlen, keydata->encr_key_blob, blob_len)) {
-//			throw io_error("internal error (1) during key unwrap operation!");
-//		}
-//		if(!EVP_DecryptFinal_ex(&ctx, blob + outlen, &tmplen)) {
-//			throw io_error("internal error (2) during key unwrap operation! Wrong password ?");
-//		}
-//		//outlen += tmplen;
-//		EVP_CIPHER_CTX_cleanup(&ctx);
-		
-		DarlingDMGCrypto_DES_CBC(derived_key, keydata->blob_enc_iv, blob, &outlen, keydata->encr_key_blob, blob_len);
+		DarlingDMGCrypto_DES_CBC(derived_key, keydata->blob_enc_iv, blob, keydata->encr_key_blob, blob_len);
 
 		uint8_t aes_key[32]; // up to aes 256 bits
 		memcpy((void*)&aes_key, blob, be(hdr->key_bits)/8);
