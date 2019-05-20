@@ -11,13 +11,13 @@
 class HFSBTreeNode
 {
 public:
-	HFSBTreeNode()
-	{
-		initConveniencePointerFromBuffer();
-		#ifdef DEBUG
-			m_nodeIndex = 0;
-		#endif
-	}
+//    HFSBTreeNode()
+//    {
+//        initConveniencePointerFromBuffer();
+//        #ifdef DEBUG
+//            m_nodeIndex = 0;
+//        #endif
+//    }
 	
 	HFSBTreeNode(std::shared_ptr<Reader> treeReader, uint32_t nodeIndex, uint16_t nodeSize)
 	{
@@ -194,8 +194,8 @@ private:
 	void initConveniencePointerFromBuffer()
 	{
 		if (m_descriptorData.size()) // required check!
-	{
-		m_descriptor = reinterpret_cast<BTNodeDescriptor*>(m_descriptorData.data());
+		{
+			m_descriptor = reinterpret_cast<BTNodeDescriptor*>(m_descriptorData.data());
 			m_firstRecordOffset = reinterpret_cast<uint16_t*>(descPtr() + m_descriptorData.size() - sizeof(uint16_t));
 		}else{
 			m_descriptor = nullptr;
@@ -207,7 +207,9 @@ private:
 	// convenience initialised by initConveniencePointerFromBuffer()
 	mutable BTNodeDescriptor* m_descriptor;
 	uint16_t* m_firstRecordOffset;
+
 	#ifdef DEBUG
+public:
 		uint32_t m_nodeIndex;
 	#endif
 };
