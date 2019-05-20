@@ -24,7 +24,7 @@ int DarlingDMGCrypto_PKCS5_PBKDF2_HMAC_SHA1(const char *pass, int passlen,
                            int keylen, unsigned char *out);
 
 void DarlingDMGCrypto_DES_CBC(const unsigned char *key, const unsigned char *iv,
-			   unsigned char *out, int *outl,
+			   unsigned char *out,
 			   const unsigned char *in, int inl);
 
 unsigned char* DarlingDMGCrypto_HMAC(const uint8_t *key, int key_len,
