@@ -364,17 +364,20 @@ if (path== "utf8_names/ABCDEFGHIJKLMNOPQRSTUVWXYZÀÁÂÃÄÅÆÇÈÉÊËÌÍÎ�
 		if (leafNodeHl!=nullptr)
 			last = leafNodeHl;
 	}
-	*s = *last;
-    if (be(s->file.recordType) == RecordType::kHFSPlusFolderRecord)
+	if (be((*last).folder.recordType) == RecordType::kHFSPlusFolderRecord)
     {
-        uint32_t nlink;
-        countDirectory(s->folder.folderID, &nlink);
-        if ( path.length() > 0) {
-            s->file.permissions.special.linkCount = be(nlink+2);
-        }else{
-            s->file.permissions.special.linkCount = be(nlink);
-        }
-    }
+		// HFSPlusCatalogFolder is smaller than HFSPlusCatalogFile. If we do *s = *last, it breaks if run with guard memory
+		memcpy(s, last.get(), sizeof(HFSPlusCatalogFolder));
+		uint32_t nlink;
+		countDirectory(s->folder.folderID, &nlink);
+		if ( path.length() > 0) {
+			s->file.permissions.special.linkCount = be(nlink+2);
+		}else{
+			s->file.permissions.special.linkCount = be(nlink);
+		}
+    }else{
+		memcpy(s, last.get(), sizeof(HFSPlusCatalogFile));
+	}
 	//std::cout << "File/folder flags: 0x" << std::hex << s->file.flags << std::endl;
 
 	return 0;
@@ -403,14 +406,19 @@ void HFSCatalogBTree::appendNameAndHFSPlusCatalogFileOrFolderFromLeafForParentId
 
 		recType = be(ff->folder.recordType);
 //#ifdef DEBUG
-//  std::string nameDebug;
 //if (recordKey->keyLength == 0x402 ) {
 //printf("");
 //}
-//  utf16BE_to_utf8(recordKey->nodeName, &nameDebug);
-//  std::cerr << "RecType " << int(recType) << ", ParentID: " << be(recordKey->parentID) << ", nodeName " << nameDebug << std::endl;
-//if (name == "ABCDEFGHIJKLMNOPQRSTUVWXYZÀÁÂÃÄÅÆÇÈÉÊËÌÍÎÏÐÑÒÓÔÕÖØÙÚÛÜÝÞĀĂĄĆĈĊČĎĐĒĔĖĘĚĜĞĠĢĤĦĨĪĬĮĲĴĶĹĻĽĿŁŃŅŇŊŌŎŐŒŔŖŘŚŜŞŠŢŤŦŨŪŬŮŰŲŴŶŸŹŻŽƁƂƄƆƇƉƊƋƎƏƐƑƓƔƖƗƘƜƝƟƠƢƤƧƩƬƮƯƱƲƳƵƷƸƼǄǅǇǈǊǋǍǏǑǓǕǗ" && nameDebug== "abcdefghijklmnopqrstuvwxyzàáâãäåæçèéêëìíîïðñòóôõöøùúûüýþāăąćĉċčďđēĕėęěĝğġģĥħĩīĭįĳĵķĺļľŀłńņňŋōŏőœŕŗřśŝşšţťŧũūŭůűųŵŷÿźżžɓƃƅɔƈɖɗƌǝəɛƒɠɣɩɨƙɯɲɵơƣƥƨʃƭʈưʊʋƴƶʒƹƽǆǆǉǉǌǌǎǐǒǔǖǘ") {
-//    printf("");
+//	std::string nameDebug;
+//	utf16BE_to_utf8(recordKey->nodeName, &nameDebug);
+//	std::cerr << "RecType " << int(recType) << ", ParentID: " << be(recordKey->parentID) << ", nodeName " << nameDebug << std::endl;
+//if (name == "utf8_names" && nameDebug== "utf8_names") {
+//	printf("");
+//		HFSBTreeNode* lp = leafNodePtr.get();
+//		char buf[4096];
+//		memcpy(buf, lp->m_descriptorData, 4096);
+//		ff = leafNodePtr->getRecordData<HFSPlusCatalogFileOrFolder>(i);
+//HFSPlusCatalogFileOrFolder s = *ff;
 //}
 //#endif
 
