@@ -14,11 +14,7 @@ FileReader::FileReader(const std::string& path)
     m_path = path;
 #endif
 
-	m_fd = open(path.c_str(), O_RDONLY
-#ifdef _MSC_VER
-                              + _O_BINARY
-#endif
-           );
+	m_fd = open(path.c_str(), O_RDONLY + O_BINARY);
 
 	if (m_fd == -1)
 	{
