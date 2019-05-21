@@ -2,6 +2,7 @@
 #include "SubReader.h"
 #include "be.h"
 #include "exceptions.h"
+#include <string> // to allow conversion from char* to string for throwing exception
 #include <stdexcept>
 
 MacBinary::MacBinary(std::shared_ptr<Reader> reader)

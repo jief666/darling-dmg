@@ -6,14 +6,16 @@
 class file_not_found_error : public std::runtime_error
 {
 public:
-	using std::runtime_error::runtime_error;
+	//	using std::runtime_error::runtime_error; // ctor inheritance is not supported by all compiler.
+	file_not_found_error(const std::string& what_arg) : std::runtime_error(what_arg) {};
 };
 
 // Used for fatal errors. Indicates a bug or severe data corruption.
 class io_error : public std::runtime_error
 {
 public:
-	using std::runtime_error::runtime_error;
+	//	using std::runtime_error::runtime_error; // ctor inheritance is not supported by all compiler.
+	io_error(const std::string& what_arg) : std::runtime_error(what_arg) {};
 };
 
 // Used to indicate non-existent xattr
@@ -27,7 +29,8 @@ public:
 class function_not_implemented_error : public std::runtime_error
 {
 public:
-	using std::runtime_error::runtime_error;
+	//	using std::runtime_error::runtime_error; // ctor inheritance is not supported by all compiler.
+	function_not_implemented_error(const std::string& what_arg) : std::runtime_error(what_arg) {};
 };
 
 

@@ -1,4 +1,5 @@
 #include "HFSZlibReader.h"
+#include <string> // to allow conversion from char* to string for throwing exception
 #include <cstring>
 #include <stdexcept>
 #include <algorithm>
