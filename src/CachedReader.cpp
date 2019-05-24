@@ -1,5 +1,6 @@
 #include "CachedReader.h"
 #include <stdexcept>
+#include <vector>
 #include <algorithm>
 #include <iostream>
 #include <limits>
@@ -93,7 +94,7 @@ int32_t CachedReader::read(void* buf, int32_t count, uint64_t offset)
 void CachedReader::nonCachedRead(void* buf, int32_t count, uint64_t offset)
 {
 	uint64_t blockStart, blockEnd;
-	uint32_t optimalBlockBufferSize = 0;
+	std::vector<uint8_t> optimalBlockBuffer;
 	uint64_t readPos = offset;
 
 #ifdef DEBUG
@@ -113,15 +114,14 @@ void CachedReader::nonCachedRead(void* buf, int32_t count, uint64_t offset)
 			throw std::logic_error("Range returned by adviseOptimalBlock() is too large");
 
 		thistime = blockEnd-blockStart;
-		if (thistime > optimalBlockBufferSize)
+		if (thistime > optimalBlockBuffer.size())
 		{
-			optimalBlockBufferSize = thistime;
+			optimalBlockBuffer.resize(thistime);
 		}
-		uint8_t* optimalBlockBuffer = (uint8_t*)alloca(optimalBlockBufferSize);
 #ifdef DEBUG
 //		std::cout << "Reading from backing reader: offset=" << blockStart << ", count=" << thistime << std::endl;
 #endif
-		rd = m_reader->read(optimalBlockBuffer, thistime, blockStart);
+		rd = m_reader->read(optimalBlockBuffer.data(), thistime, blockStart);
 
 		if (rd < thistime)
 			throw io_error("Short read from backing reader");
