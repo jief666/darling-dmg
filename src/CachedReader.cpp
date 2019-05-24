@@ -6,7 +6,9 @@
 #include <assert.h>
 #include "exceptions.h"
 
+#ifdef DEBUG
 //#define NO_CACHE
+#endif
 
 CachedReader::CachedReader(std::shared_ptr<Reader> reader, std::shared_ptr<CacheZone> zone, const std::string& tag)
 : m_reader(reader), m_zone(zone), m_tag(tag)
@@ -15,13 +17,6 @@ CachedReader::CachedReader(std::shared_ptr<Reader> reader, std::shared_ptr<Cache
 
 int32_t CachedReader::read(void* buf, int32_t count, uint64_t offset)
 {
-#ifndef NO_CACHE
-	int32_t done = 0; // from 0 till count
-	int32_t lastFetchPos = 0; // pos from 0 till count
-	
-#ifdef DEBUG
-//	std::cout << "CachedReader::read(): offset=" << offset << ", count=" << count << std::endl;
-#endif
 
     if (offset > length())
         return 0;
@@ -29,6 +24,14 @@ int32_t CachedReader::read(void* buf, int32_t count, uint64_t offset)
         return 0;
 	if (count > length() - offset)
 		count = length() - offset;
+
+#ifndef NO_CACHE
+	int32_t done = 0; // from 0 till count
+	int32_t lastFetchPos = 0; // pos from 0 till count
+	
+#ifdef DEBUG
+//	std::cout << "CachedReader::read(): offset=" << offset << ", count=" << count << std::endl;
+#endif
 	
 	while (done < count)
 	{
@@ -90,7 +93,6 @@ int32_t CachedReader::read(void* buf, int32_t count, uint64_t offset)
 void CachedReader::nonCachedRead(void* buf, int32_t count, uint64_t offset)
 {
 	uint64_t blockStart, blockEnd;
-	std::unique_ptr<uint8_t[]> optimalBlockBuffer;
 	uint32_t optimalBlockBufferSize = 0;
 	uint64_t readPos = offset;
 
@@ -114,13 +116,12 @@ void CachedReader::nonCachedRead(void* buf, int32_t count, uint64_t offset)
 		if (thistime > optimalBlockBufferSize)
 		{
 			optimalBlockBufferSize = thistime;
-			optimalBlockBuffer.reset(new uint8_t[optimalBlockBufferSize]);
 		}
-
+		uint8_t* optimalBlockBuffer = (uint8_t*)alloca(optimalBlockBufferSize);
 #ifdef DEBUG
 //		std::cout << "Reading from backing reader: offset=" << blockStart << ", count=" << thistime << std::endl;
 #endif
-		rd = m_reader->read(optimalBlockBuffer.get(), thistime, blockStart);
+		rd = m_reader->read(optimalBlockBuffer, thistime, blockStart);
 
 		if (rd < thistime)
 			throw io_error("Short read from backing reader");
@@ -129,11 +130,20 @@ void CachedReader::nonCachedRead(void* buf, int32_t count, uint64_t offset)
 		uint64_t cachePos = (blockStart + (CacheZone::BLOCK_SIZE-1)) & ~uint64_t(CacheZone::BLOCK_SIZE-1);
 
 		// And start storing everything we've just read into cache
-		while (cachePos < blockEnd)
+//		while (cachePos < blockEnd)
+//		{
+//			m_zone->store(m_tag, cachePos / CacheZone::BLOCK_SIZE, &optimalBlockBuffer[cachePos - blockStart],
+//					std::min<size_t>(blockEnd-cachePos, CacheZone::BLOCK_SIZE));
+//			cachePos += CacheZone::BLOCK_SIZE;
+//		}
+		// Only put block of 4096 in cache.
+		if ( blockEnd >= 4096 )
 		{
-			m_zone->store(m_tag, cachePos / CacheZone::BLOCK_SIZE, &optimalBlockBuffer[cachePos - blockStart],
-					std::min<size_t>(blockEnd-cachePos, CacheZone::BLOCK_SIZE));
+			while (cachePos <= blockEnd-4096)
+			{
+				m_zone->store(m_tag, cachePos / CacheZone::BLOCK_SIZE, &optimalBlockBuffer[cachePos - blockStart], CacheZone::BLOCK_SIZE);
 			cachePos += CacheZone::BLOCK_SIZE;
+		}
 		}
 
 		// Copy into output buffer

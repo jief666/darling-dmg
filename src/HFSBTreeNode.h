@@ -4,9 +4,12 @@
 #include "be.h"
 #include <iostream>
 #include <vector>
+#include <string>
 #include <memory>
 #include <stdexcept>
+#include "exceptions.h"
 #include "Reader.h"
+#include "../../Utils.h"
 
 class HFSBTreeNode
 {
@@ -26,7 +29,7 @@ public:
 		#endif
 		m_descriptorData.resize(nodeSize);
 		
-		int32_t read = treeReader->read(m_descriptorData.data(), m_descriptorData.size(), nodeSize*nodeIndex);
+		int32_t read = treeReader->read(m_descriptorData.data(), nodeSize, nodeSize*nodeIndex);
 		if (read < nodeSize)
 			throw std::runtime_error("Short read of BTree node. "+std::to_string(read)+" bytes read instead of "+std::to_string(nodeSize));
 
@@ -86,7 +89,9 @@ public:
 	template<typename KeyType> KeyType* getRecordKey(uint16_t recordIndex) const
 	{
 		uint16_t recordOffset = be(*(m_firstRecordOffset - recordIndex));
-		
+		if ( recordOffset > m_descriptorData.size() ) {
+			throw function_not_implemented_error(std::string("recordOffset invalid"));
+		}
 		return reinterpret_cast<KeyType*>(descPtr() + recordOffset);
 	}
 	

@@ -394,7 +394,8 @@ void HFSCatalogBTree::appendNameAndHFSPlusCatalogFileOrFolderFromLeafForParentId
 
     utf16Name.length = be((uint16_t)utf8_to_utf16BE(utf16Name.string, sizeof(utf16Name.string)/2, (const char*)res, strlen((char*)res), 0, NULL));
 	
-    for (int i = 0; i < leafNodePtr->recordCount(); i++)
+	uint16_t recordCount = leafNodePtr->recordCount();
+	for (int i = 0; i < recordCount; i++)
 	{
 		HFSPlusCatalogKey* recordKey;
 		HFSPlusCatalogFileOrFolder* ff;
@@ -404,7 +405,7 @@ void HFSCatalogBTree::appendNameAndHFSPlusCatalogFileOrFolderFromLeafForParentId
 		ff = leafNodePtr->getRecordData<HFSPlusCatalogFileOrFolder>(i);
 
 		recType = be(ff->folder.recordType);
-//#ifdef DEBUG
+#ifdef DEBUG
 //if (recordKey->keyLength == 0x402 ) {
 //printf("");
 //}
@@ -419,7 +420,7 @@ void HFSCatalogBTree::appendNameAndHFSPlusCatalogFileOrFolderFromLeafForParentId
 //		ff = leafNodePtr->getRecordData<HFSPlusCatalogFileOrFolder>(i);
 //HFSPlusCatalogFileOrFolder s = *ff;
 //}
-//#endif
+#endif
 
 
 		switch (recType)

@@ -3,7 +3,7 @@
 #include <cstring>
 #include <iostream>
 #include <assert.h>
-
+#include "exceptions.h"
 CacheZone::CacheZone(size_t maxBlocks)
 : m_maxBlocks(maxBlocks)
 {
@@ -17,6 +17,9 @@ void CacheZone::setMaxBlocks(size_t max)
 
 void CacheZone::store(const std::string& vfile, uint64_t blockId, const uint8_t* data, size_t bytes)
 {
+	if ( bytes < BLOCK_SIZE )
+		throw function_not_implemented_error("Block in cache has to be BLOCK_SIZE bytes");
+		
 	CacheKey key = CacheKey(blockId, vfile);
 	CacheEntry entry;
 	std::unordered_map<CacheKey, CacheEntry>::iterator it;
