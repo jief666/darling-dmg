@@ -314,9 +314,11 @@ int HFSCatalogBTree::stat(std::string path, HFSPlusCatalogFileOrFolder* s)
 
 	elems.push_back(std::string());
 	split(path, '/', elems);
-//if (path== "utf8_names/ABCDEFGHIJKLMNOPQRSTUVWXYZÀÁÂÃÄÅÆÇÈÉÊËÌÍÎÏÐÑÒÓÔÕÖØÙÚÛÜÝÞĀĂĄĆĈĊČĎĐĒĔĖĘĚĜĞĠĢĤĦĨĪĬĮĲĴĶĹĻĽĿŁŃŅŇŊŌŎŐŒŔŖŘŚŜŞŠŢŤŦŨŪŬŮŰŲŴŶŸŹŻŽƁƂƄƆƇƉƊƋƎƏƐƑƓƔƖƗƘƜƝƟƠƢƤƧƩƬƮƯƱƲƳƵƷƸƼǄǅǇǈǊǋǍǏǑǓǕǗ") {
-//        printf("");
-//}
+#ifdef DEBUG
+if (path== "/utf8_names/pomme.txt") {
+        printf("");
+}
+#endif
 	for (size_t i = 0; i < elems.size(); i++)
 	{
 		std::string elem = elems[i];
@@ -327,6 +329,11 @@ int HFSCatalogBTree::stat(std::string path, HFSPlusCatalogFileOrFolder* s)
 		//if (ustr.length() > 255) // FIXME: there is a UCS-2 vs UTF-16 issue here!
 		//	return -ENAMETOOLONG;
 
+#ifdef DEBUG
+if (elem== "pomme.txt") {
+        printf("");
+}
+#endif
 		last = findHFSPlusCatalogFileOrFolderForParentIdAndName(parentID, elem);
 		if (last==nullptr)
 			return -ENOENT;
@@ -390,6 +397,11 @@ void HFSCatalogBTree::appendNameAndHFSPlusCatalogFileOrFolderFromLeafForParentId
 void HFSCatalogBTree::appendNameAndHFSPlusCatalogFileOrFolderFromLeafForParentIdAndName(std::shared_ptr<HFSBTreeNode> leafNodePtr, HFSCatalogNodeID cnid, const std::string& name, std::map<std::string, std::shared_ptr<HFSPlusCatalogFileOrFolder>>& map)
 {
     HFSString utf16Name;
+#ifdef DEBUG
+if (name== "pomme.txt") {
+        printf("");
+}
+#endif
     uint8_t* res = utf8proc_NFD((const uint8_t*)name.c_str());
 
     utf16Name.length = be((uint16_t)utf8_to_utf16BE(utf16Name.string, sizeof(utf16Name.string)/2, (const char*)res, strlen((char*)res), 0, NULL));
