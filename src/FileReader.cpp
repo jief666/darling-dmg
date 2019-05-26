@@ -100,7 +100,7 @@ FileReader::FileReader(const std::string& path)
 	{
 		DWORD err = GetLastError();
 		std::string errAsString = GetLastErrorAsString(err);
-		fprintf(stderr, "Error %u getting device geometry.\n", err);
+		//fprintf(stderr, "Error %u getting device geometry.\n", err);
 
 		LARGE_INTEGER newoffset;
 		if ( GetFileSizeEx(m_fdw, &newoffset) == 0 ) {
