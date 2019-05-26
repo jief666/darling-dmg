@@ -57,7 +57,7 @@ FileReader::FileReader(const std::string& path)
 		0,
 		NULL,
 		OPEN_EXISTING,
-		FILE_FLAG_NO_BUFFERING,
+		0,    // FILE_FLAG_NO_BUFFERING. I tried that first, but that cause problem on Windows Server 1607 (appveyor version May 2019)
 		NULL
 	);
 	if (m_fdw == INVALID_HANDLE_VALUE)
@@ -69,7 +69,7 @@ FileReader::FileReader(const std::string& path)
 	DWORD bytes_to_transfer, byte_count;
 	DISK_GEOMETRY source_diskgeometry;
 
-// Locking seems no needed
+// Locking seems no needed. It'll be a good thing if I know how to lock the partition (not the whole drive)
 	//if (!DeviceIoControl
 	//(
 	//	m_fdw,
