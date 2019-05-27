@@ -287,6 +287,8 @@ std::vector<uint8_t> HFSHighLevelVolume::getXattr(const std::string& path, const
 		getXattrFinderInfo(ff, buf);
 		if (  memcmp(buf, zero, 32) != 0 ) // push FinderInfo only is non zero
 			output.insert(output.end(), reinterpret_cast<uint8_t*>(buf), reinterpret_cast<uint8_t*>(buf)+32);
+		else
+			throw attribute_not_found_error();
 	}
 	else
 	{
@@ -304,6 +306,12 @@ std::vector<uint8_t> HFSHighLevelVolume::getXattr(const std::string& path, const
 			throw attribute_not_found_error();
 	}
 
+	#ifdef DEBUG
+	if ( output.size() == 0 ) {
+		fprintf(stderr, "HFSHighLevelVolume::getXattr would return 0\n");
+		throw operation_not_permitted_error();
+	}
+	#endif
 	return output;
 }
 
