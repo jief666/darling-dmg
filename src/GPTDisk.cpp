@@ -74,17 +74,18 @@ void GPTDisk::loadPartitions(std::shared_ptr<Reader> table)
 
 	for (int i = 0; i < rd / sizeof(GPTPartition); i++)
 	{
+		GPTPartition& gptPartition = part[i];
 		Partition p;
 		char name[37];
-		std::string typeGUID = makeGUID(part[i].typeGUID);
+		std::string typeGUID = makeGUID(gptPartition.typeGUID);
 
 		memset(name, 0, sizeof(name));
 		for (int j = 0; j < 36; j++)
-			name[j] = char(part[i].name[j]);
+			name[j] = char(gptPartition.name[j]);
 
 		p.name = name;
-		p.size = (part[i].lastLBA - part[i].firstLBA + 1) * 512;
-		p.offset = part[i].firstLBA * 512;
+		p.size = (gptPartition.lastLBA - gptPartition.firstLBA + 1) * 512;
+		p.offset = gptPartition.firstLBA * 512;
 
 		if (typeGUID == GUID_EMPTY)
 			p.type = "Apple_Free";

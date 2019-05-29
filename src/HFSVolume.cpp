@@ -17,13 +17,13 @@ HFSVolume::HFSVolume(std::shared_ptr<Reader> reader)
 	if (m_reader->read(&m_header, sizeof(m_header), 1024) != sizeof(m_header))
 		throw io_error("Cannot read volume header");
 	
-	if (be(m_header.signature) == HFS_SIGNATURE)
+	if (m_header.signature == HFS_SIGNATURE)
 	{
 		HFSMasterDirectoryBlock* block = reinterpret_cast<HFSMasterDirectoryBlock*>(&m_header);
 		processEmbeddedHFSPlus(block);
 	}
 	
-	if (be(m_header.signature) != HFSP_SIGNATURE && be(m_header.signature) != HFSX_SIGNATURE)
+	if (m_header.signature != HFSP_SIGNATURE && m_header.signature != HFSX_SIGNATURE)
 		throw io_error("Invalid HFS+/HFSX signature");
 
 	std::shared_ptr<HFSFork> fork (new HFSFork(this, m_header.extentsFile));
@@ -45,14 +45,14 @@ HFSVolume::~HFSVolume()
 
 void HFSVolume::processEmbeddedHFSPlus(HFSMasterDirectoryBlock* block)
 {
-	uint32_t blockSize = be(block->drAlBlkSiz);
+	uint32_t blockSize = block->drAlBlkSiz;
 	uint64_t offset, length;
 
-	if (be(block->drEmbedSigWord) != HFSP_SIGNATURE && be(block->drEmbedSigWord) != HFSX_SIGNATURE)
+	if (block->drEmbedSigWord != HFSP_SIGNATURE && block->drEmbedSigWord != HFSX_SIGNATURE)
 		throw function_not_implemented_error("Original HFS is not supported");
 
-	offset = blockSize * be(block->drEmbedExtent.startBlock) + 512 * be(block->drAlBlSt);
-	length = blockSize * be(block->drEmbedExtent.blockCount);
+	offset = blockSize * block->drEmbedExtent.startBlock + 512 * block->drAlBlSt;
+	length = blockSize * block->drEmbedExtent.blockCount;
 	
 #ifdef DEBUG
 	std::cout << "HFS+ partition is embedded at offset: " << offset << ", length: " << length << std::endl;
@@ -70,24 +70,24 @@ bool HFSVolume::isHFSPlus(std::shared_ptr<Reader> reader)
 	if (reader->read(&header, sizeof(header), 1024) != sizeof(header))
 		return false;
 	
-	if (be(header.signature) == HFS_SIGNATURE)
+	if (header.signature == HFS_SIGNATURE)
 	{
 		HFSMasterDirectoryBlock* block = reinterpret_cast<HFSMasterDirectoryBlock*>(&header);
-		return be(block->drEmbedSigWord) == HFSP_SIGNATURE || be(block->drEmbedSigWord) == HFSX_SIGNATURE;
+		return block->drEmbedSigWord == HFSP_SIGNATURE || block->drEmbedSigWord == HFSX_SIGNATURE;
 	}
 	
-	return be(header.signature) == HFSP_SIGNATURE || be(header.signature) == HFSX_SIGNATURE;
+	return header.signature == HFSP_SIGNATURE || header.signature == HFSX_SIGNATURE;
 }
 
 bool HFSVolume::isHFSX() const
 {
-	return be(m_header.signature) == HFSX_SIGNATURE;
+	return m_header.signature == HFSX_SIGNATURE;
 }
 
 void HFSVolume::usage(uint64_t& totalBytes, uint64_t& freeBytes) const
 {
-	totalBytes = be(m_header.blockSize) * be(m_header.totalBlocks);
-	freeBytes = be(m_header.blockSize) * be(m_header.freeBlocks);
+	totalBytes = m_header.blockSize * m_header.totalBlocks;
+	freeBytes = m_header.blockSize * m_header.freeBlocks;
 }
 
 HFSCatalogBTree* HFSVolume::rootCatalogTree()

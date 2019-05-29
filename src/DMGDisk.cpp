@@ -27,7 +27,7 @@ DMGDisk::DMGDisk(std::shared_ptr<Reader> reader)
 	if (m_reader->read(&m_udif, sizeof(m_udif), offset) != sizeof(m_udif))
 		throw io_error("Cannot read the KOLY block");
 
-	if (be(m_udif.fUDIFSignature) != UDIF_SIGNATURE)
+	if (m_udif.fUDIFSignature != UDIF_SIGNATURE)
 		throw io_error("Invalid KOLY block signature");
 	
 	loadKoly(m_udif);
@@ -41,10 +41,10 @@ DMGDisk::~DMGDisk()
 bool DMGDisk::isDMG(std::shared_ptr<Reader> reader)
 {
 	uint64_t offset = reader->length() - 512;
-	decltype(UDIFResourceFile::fUDIFSignature) sig = 0;
+	decltype(UDIFResourceFile::fUDIFSignature) sig;
 
 	reader->read(&sig, sizeof(sig), offset);
-	return be(sig) == UDIF_SIGNATURE;
+	return sig == UDIF_SIGNATURE;
 }
 
 void DMGDisk::loadKoly(const UDIFResourceFile& koly)
@@ -55,8 +55,8 @@ void DMGDisk::loadKoly(const UDIFResourceFile& koly)
 	uint64_t offset, length;
 	bool simpleWayOK = false;
 
-	offset = be(koly.fUDIFXMLOffset);
-	length = be(koly.fUDIFXMLLength);
+	offset = koly.fUDIFXMLOffset;
+	length = koly.fUDIFXMLLength;
 
 	xmlData.reset(new char[length]);
 	m_reader->read(xmlData.get(), length, offset);
@@ -132,8 +132,8 @@ bool DMGDisk::loadPartitionElements(xmlXPathContextPtr xpathContext, xmlNodeSetP
 		
 		if (table)
 		{
-			part.offset = be(table->firstSectorNumber) * 512;
-			part.size = be(table->sectorCount) * 512;
+			part.offset = table->firstSectorNumber * 512;
+			part.size = table->sectorCount * 512;
 		}
 
 		if (!parseNameAndType((const char*) xpathObj->stringval, part.name, part.type) && m_partitions.empty())
@@ -230,11 +230,11 @@ std::shared_ptr<Reader> DMGDisk::readerForPartition(int index)
 		if (!table)
 			continue;
 		
-		if (be(table->firstSectorNumber)*512 == m_partitions[index].offset)
+		if (table->firstSectorNumber*512 == m_partitions[index].offset)
 		{
 			std::stringstream partName;
 			uint64_t l = m_reader->length();
-			uint32_t data_offset = be(m_udif.fUDIFDataForkOffset);
+			uint32_t data_offset = m_udif.fUDIFDataForkOffset;
 
 			partName << "part-" << index;
 

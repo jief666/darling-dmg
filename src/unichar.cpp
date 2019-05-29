@@ -28,7 +28,7 @@ bool EqualNoCase(const HFSString& str1, const std::string& str2)
 {
 	UErrorCode error = U_ZERO_ERROR;
 	UnicodeString ustr = UnicodeString::fromUTF8(str2);
-	UnicodeString ustr2 = UnicodeString((char*)str1.string, be(str1.length)*2, g_utf16be, error);
+	UnicodeString ustr2 = UnicodeString((char*)str1.string, str1.length*2, g_utf16be, error);
 	
 	assert(U_SUCCESS(error));
 	
@@ -39,7 +39,7 @@ bool EqualCase(const HFSString& str1, const std::string& str2)
 {
 	UErrorCode error = U_ZERO_ERROR;
 	UnicodeString ustr = UnicodeString::fromUTF8(str2);
-	UnicodeString ustr2 = UnicodeString((char*)str1.string, be(str1.length)*2, g_utf16be, error);
+	UnicodeString ustr2 = UnicodeString((char*)str1.string, str1.length*2, g_utf16be, error);
 	
 	assert(U_SUCCESS(error));
 	

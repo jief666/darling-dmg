@@ -15,22 +15,22 @@ Reader* MacBinary::getDataFork()
 {
 	uint32_t extraLen = 0;
 
-	if (be(m_header.signature) == 'mBIN')
-		extraLen = be(m_header.sec_header_len);
+	if (m_header.signature == 'mBIN')
+		extraLen = m_header.sec_header_len;
 
-	return new SubReader(m_reader, sizeof(m_header) + extraLen, be(m_header.data_len));
+	return new SubReader(m_reader, sizeof(m_header) + extraLen, m_header.data_len);
 }
 
 Reader* MacBinary::getResourceFork()
 {
 	uint32_t extraLen = 0;
 
-	if (be(m_header.signature) == 'mBIN')
-		extraLen = be(m_header.sec_header_len);
+	if (m_header.signature == 'mBIN')
+		extraLen = m_header.sec_header_len;
 
-	extraLen += be(m_header.data_len);
+	extraLen += m_header.data_len;
 	extraLen = (extraLen+127) / 128 * 128;
 
-	return new SubReader(m_reader, sizeof(m_header) + extraLen, be(m_header.resource_len));
+	return new SubReader(m_reader, sizeof(m_header) + extraLen, m_header.resource_len);
 }
 

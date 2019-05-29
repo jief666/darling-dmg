@@ -16,7 +16,7 @@ HFSCatalogBTree::HFSCatalogBTree(std::shared_ptr<HFSFork> fork, HFSVolume* volum
 	HFSPlusCatalogFileOrFolder ff;
 	int rv = stat(std::string("\0\0\0\0HFS+ Private Data", 21), &ff);
 	if (rv == 0)
-		m_hardLinkDirID = be(ff.folder.folderID);
+		m_hardLinkDirID = ff.folder.folderID;
 }
 
 bool HFSCatalogBTree::isCaseSensitive() const
@@ -31,20 +31,20 @@ int HFSCatalogBTree::caseInsensitiveComparator(const Key* indexKey, const Key* d
 	UnicodeString desiredName, indexName;
 	UErrorCode error = U_ZERO_ERROR;
 
-	//std::cout << "desired: " << be(catDesiredKey->parentID) << ", index: " << be(catIndexKey->parentID) << "\n";
-	if (be(catDesiredKey->parentID) < be(catIndexKey->parentID))
+	//std::cout << "desired: " << catDesiredKey->parentID << ", index: " << catIndexKey->parentID << "\n";
+	if (catDesiredKey->parentID < catIndexKey->parentID)
 	{
 		//std::cout << "\t -> bigger\n";
 		return 1;
 	}
-	else if (be(catDesiredKey->parentID) > be(catIndexKey->parentID))
+	else if (catDesiredKey->parentID > catIndexKey->parentID)
 	{
 		//std::cout << "\t -> smaller\n";
 		return -1;
 	}
 
-	desiredName = UnicodeString((char*)catDesiredKey->nodeName.string, be(catDesiredKey->nodeName.length)*2, g_utf16be, error);
-	indexName = UnicodeString((char*)catIndexKey->nodeName.string, be(catIndexKey->nodeName.length)*2, g_utf16be, error);
+	desiredName = UnicodeString((char*)catDesiredKey->nodeName.string, catDesiredKey->nodeName.length*2, g_utf16be, error);
+	indexName = UnicodeString((char*)catIndexKey->nodeName.string, catIndexKey->nodeName.length*2, g_utf16be, error);
 	
 	// Hack for "\0\0\0\0HFS+ Private Data" which should come as last in ordering (issue #11)
 	if (indexName.charAt(0) == 0)
@@ -74,13 +74,13 @@ int HFSCatalogBTree::caseSensitiveComparator(const Key* indexKey, const Key* des
 	UnicodeString desiredName, indexName;
 	UErrorCode error = U_ZERO_ERROR;
 
-	if (be(catDesiredKey->parentID) < be(catIndexKey->parentID))
+	if (catDesiredKey->parentID < catIndexKey->parentID)
 		return 1;
-	else if (be(catDesiredKey->parentID) > be(catIndexKey->parentID))
+	else if (catDesiredKey->parentID > catIndexKey->parentID)
 		return -1;
 
-	desiredName = UnicodeString((char*)catDesiredKey->nodeName.string, be(catDesiredKey->nodeName.length)*2, g_utf16be, error);
-	indexName = UnicodeString((char*)catIndexKey->nodeName.string, be(catIndexKey->nodeName.length)*2, g_utf16be, error);
+	desiredName = UnicodeString((char*)catDesiredKey->nodeName.string, catDesiredKey->nodeName.length*2, g_utf16be, error);
+	indexName = UnicodeString((char*)catIndexKey->nodeName.string, catIndexKey->nodeName.length*2, g_utf16be, error);
 	
 	// Hack for "\0\0\0\0HFS+ Private Data" which should come as last in ordering (issue #11)
 	if (indexName.charAt(0) == 0)
@@ -109,11 +109,11 @@ int HFSCatalogBTree::idOnlyComparator(const Key* indexKey, const Key* desiredKey
 	const HFSPlusCatalogKey* catIndexKey = reinterpret_cast<const HFSPlusCatalogKey*>(indexKey);
 	const HFSPlusCatalogKey* catDesiredKey = reinterpret_cast<const HFSPlusCatalogKey*>(desiredKey);
 	
-	//std::cerr << "idOnly: desired: " << be(catDesiredKey->parentID) << ", index: " << be(catIndexKey->parentID) << std::endl;
+	//std::cerr << "idOnly: desired: " << catDesiredKey->parentID << ", index: " << catIndexKey->parentID << std::endl;
 
-	if (be(catDesiredKey->parentID) > be(catIndexKey->parentID))
+	if (catDesiredKey->parentID > catIndexKey->parentID)
 		return -1;
-	else if (be(catIndexKey->parentID) > be(catDesiredKey->parentID))
+	else if (catIndexKey->parentID > catDesiredKey->parentID)
 		return 1;
 	else
 		return 0;
@@ -134,7 +134,7 @@ int HFSCatalogBTree::listDirectory(const std::string& path, std::map<std::string
 	if (rv != 0)
 		return rv;
 
-	if (be(dir.folder.recordType) != RecordType::kHFSPlusFolderRecord)
+	if (dir.folder.recordType != RecordType::kHFSPlusFolderRecord)
 		return -ENOTDIR;
 
 	// find leaves that may contain directory elements
@@ -144,7 +144,7 @@ int HFSCatalogBTree::listDirectory(const std::string& path, std::map<std::string
 	for (std::shared_ptr<HFSBTreeNode> leafPtr : leaves)
 	{
 		//std::cerr << "**** Looking for elems with CNID " << be(key.parentID) << std::endl;
-		 appendNameAndHFSPlusCatalogFileOrFolderFromLeafForParentId(leafPtr, be(key.parentID), beContents);
+		 appendNameAndHFSPlusCatalogFileOrFolderFromLeafForParentId(leafPtr, key.parentID, beContents);
 	}
 
 	for (auto it = beContents.begin(); it != beContents.end(); it++)
@@ -158,7 +158,7 @@ int HFSCatalogBTree::listDirectory(const std::string& path, std::map<std::string
 		 * - ".journal_info_block"
 		 * from root directory
 		 */
-		if (be(dir.folder.folderID) != kHFSRootFolderID  ||  (filename[0]!=0  &&  filename.compare(".HFS+ Private Directory Data\r")!=0  &&  filename.compare(".journal")!=0  &&  filename.compare(".journal_info_block")!=0))
+		if (dir.folder.folderID != kHFSRootFolderID  ||  (filename[0]!=0  &&  filename.compare(".HFS+ Private Directory Data\r")!=0  &&  filename.compare(".journal")!=0  &&  filename.compare(".journal_info_block")!=0))
 		{
 			replaceChars(filename, '/', ':'); // Issue #36: / and : have swapped meaning in HFS+
 			contents[filename] = it->second;
@@ -187,7 +187,7 @@ std::shared_ptr<HFSPlusCatalogFileOrFolder> HFSCatalogBTree::findHFSPlusCatalogF
 	for (std::shared_ptr<HFSBTreeNode> leafPtr : leaves)
 	{
 		//std::cerr << "**** Looking for elems with CNID " << be(key.parentID) << std::endl;
-		appendNameAndHFSPlusCatalogFileOrFolderFromLeafForParentIdAndName(leafPtr, be(key.parentID), elem, beContents);
+		appendNameAndHFSPlusCatalogFileOrFolderFromLeafForParentIdAndName(leafPtr, key.parentID, elem, beContents);
 	}
 	if (beContents.size() == 0)
 		return nullptr;
@@ -218,7 +218,7 @@ int HFSCatalogBTree::stat(std::string path, HFSPlusCatalogFileOrFolder* s)
 		std::string elem = elems[i];
 		replaceChars(elem, ':', '/'); // Issue #36: / and : have swapped meaning in HFS+
 
-		HFSCatalogNodeID parentID = last ? be(last->folder.folderID) : kHFSRootParentID;
+		HFSCatalogNodeID parentID = last ? last->folder.folderID : kHFSRootParentID;
 
 		//if (ustr.length() > 255) // FIXME: there is a UCS-2 vs UTF-16 issue here!
 		//	return -ENAMETOOLONG;
@@ -251,10 +251,10 @@ int HFSCatalogBTree::stat(std::string path, HFSPlusCatalogFileOrFolder* s)
 
 		//parent = last->folder.folderID;
 	}
-	if (be(last->file.userInfo.fileType) == kHardLinkFileType  &&  m_hardLinkDirID != 0) {
+	if (last->file.userInfo.fileType == kHardLinkFileType  &&  m_hardLinkDirID != 0) {
 		std::string iNodePath;
 		iNodePath += "iNode";
-		iNodePath += std::to_string(be(last->file.permissions.special.iNodeNum));
+		iNodePath += std::to_string(last->file.permissions.special.iNodeNum);
 		std::shared_ptr<HFSPlusCatalogFileOrFolder> leafNodeHl = findHFSPlusCatalogFileOrFolderForParentIdAndName(m_hardLinkDirID, iNodePath);
 		if (leafNodeHl!=nullptr)
 			last = leafNodeHl;
@@ -283,7 +283,7 @@ void HFSCatalogBTree::appendNameAndHFSPlusCatalogFileOrFolderFromLeafForParentId
 		recordKey = leafNodePtr->getRecordKey<HFSPlusCatalogKey>(i);
 		ff = leafNodePtr->getRecordData<HFSPlusCatalogFileOrFolder>(i);
 
-		recType = be(ff->folder.recordType);
+		recType = ff->folder.recordType;
 		//{
 			//std::string name = UnicharToString(recordKey->nodeName);
 			//std::cerr << "RecType " << int(recType) << ", ParentID: " << be(recordKey->parentID) << ", nodeName " << name << std::endl;
@@ -296,7 +296,7 @@ void HFSCatalogBTree::appendNameAndHFSPlusCatalogFileOrFolderFromLeafForParentId
 			{
 				
 				// do NOT skip "\0\0\0\0HFS+ Private Data", we need it to get is folderID in constructor
-				if ( /* recordKey->nodeName.string[0] != 0 &&*/ be(recordKey->parentID) == cnid)
+				if ( /* recordKey->nodeName.string[0] != 0 &&*/ recordKey->parentID == cnid)
 				{
 					bool equal = name.empty();
 					if (!equal)
@@ -346,11 +346,11 @@ int HFSCatalogBTree::openFile(const std::string& path, std::shared_ptr<Reader>& 
 	if (rv < 0)
 		return rv;
 
-	if (be(ff.folder.recordType) != RecordType::kHFSPlusFileRecord)
+	if (ff.folder.recordType != RecordType::kHFSPlusFileRecord)
 		return -EISDIR;
 
 	forkOut.reset(new HFSFork(m_volume, resourceFork ? ff.file.resourceFork : ff.file.dataFork,
-		be(ff.file.fileID), resourceFork));
+		ff.file.fileID, resourceFork));
 
 	return 0;
 }
@@ -360,12 +360,12 @@ int HFSCatalogBTree::openFile(const std::string& path, std::shared_ptr<Reader>& 
 
 void HFSCatalogBTree::dumpTree() const
 {
-	dumpTree(be(m_header.rootNode), 0);
+	dumpTree(m_header.rootNode, 0);
 }
 
 void HFSCatalogBTree::dumpTree(int nodeIndex, int depth) const
 {
-	HFSBTreeNode node(m_reader, nodeIndex, be(m_header.nodeSize));
+	HFSBTreeNode node(m_reader, nodeIndex, m_header.nodeSize);
 
 	switch (node.kind())
 	{
@@ -375,7 +375,7 @@ void HFSCatalogBTree::dumpTree(int nodeIndex, int depth) const
 			{
 				UErrorCode error = U_ZERO_ERROR;
 				HFSPlusCatalogKey* key = node.getRecordKey<HFSPlusCatalogKey>(i);
-				UnicodeString keyName((char*)key->nodeName.string, be(key->nodeName.length)*2, g_utf16be, error);
+				UnicodeString keyName((char*)key->nodeName.string, key->nodeName.length*2, g_utf16be, error);
 				std::string str;
 				
 				keyName.toUTF8String(str);
@@ -383,8 +383,8 @@ void HFSCatalogBTree::dumpTree(int nodeIndex, int depth) const
 				// recurse down
 				uint32_t* childIndex = node.getRecordData<uint32_t>(i);
 #ifdef DEBUG
-				printf("Index Node(%4d,%4zd) %s %s(%d) ->child %d\n", nodeIndex, i, std::string(depth, ' ').c_str(), str.c_str(), be(key->parentID), be(*childIndex));
-//				std::cout << "Index node(" << nodeIndex << "): " << std::string(depth, ' ') << str << "(" << be(key->parentID) << ")\n";
+				printf("Index Node(%4d,%4zd) %s %s(%d) ->child %d\n", nodeIndex, i, std::string(depth, ' ').c_str(), str.c_str(), key->parentID, *childIndex);
+//				std::cout << "Index node(" << nodeIndex << "): " << std::string(depth, ' ') << str << "(" << key->parentID << ")\n";
 #endif
 				dumpTree(be(*childIndex), depth+2);
 			}
@@ -401,12 +401,12 @@ void HFSCatalogBTree::dumpTree(int nodeIndex, int depth) const
 				std::string str;
 				
 				recordKey = node.getRecordKey<HFSPlusCatalogKey>(i);
-				keyName = UnicodeString((char*)recordKey->nodeName.string, be(recordKey->nodeName.length)*2, g_utf16be, error);
+				keyName = UnicodeString((char*)recordKey->nodeName.string, recordKey->nodeName.length*2, g_utf16be, error);
 				keyName.toUTF8String(str);
 				
 #ifdef DEBUG
-				printf("Leaf Node(%4d,%4zd)  %s %s(%d)\n", nodeIndex, i, std::string(depth, ' ').c_str(), str.c_str(), be(recordKey->parentID));
-//				std::cout << "dumpTree(l): " << std::string(depth, ' ') << str << "(" << be(recordKey->parentID) << ")\n";
+				printf("Leaf Node(%4d,%4zd)  %s %s(%d)\n", nodeIndex, i, std::string(depth, ' ').c_str(), str.c_str(), recordKey->parentID);
+//				std::cout << "dumpTree(l): " << std::string(depth, ' ') << str << "(" << recordKey->parentID << ")\n";
 #endif
 			}
 			

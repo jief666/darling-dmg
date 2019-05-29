@@ -4,6 +4,8 @@
 
 #pragma pack(1)
 
+#include "be.h"
+
 typedef uint16_t unichar;
 typedef uint32_t HFSCatalogNodeID;
 
@@ -24,68 +26,68 @@ typedef uint32_t HFSCatalogNodeID;
 
 struct HFSString
 {
-	uint16_t length;
+	be<uint16_t> length;
 	unichar string[255];
 };
 
 struct HFSPlusBSDInfo
 {
-	uint32_t ownerID;
-	uint32_t groupID;
-	uint8_t adminFlags;
-	uint8_t ownerFlags;
-	uint16_t fileMode;
+	be<uint32_t> ownerID;
+	be<uint32_t> groupID;
+	be<uint8_t> adminFlags;
+	be<uint8_t> ownerFlags;
+	be<uint16_t> fileMode;
 	union
 	{
-		uint32_t iNodeNum;
-		uint32_t linkCount;
-		uint32_t rawDevice;
+		be<uint32_t> iNodeNum;
+		be<uint32_t> linkCount;
+		be<uint32_t> rawDevice;
 	} special;
 };
 
 struct HFSPlusExtentDescriptor
 {
-	uint32_t startBlock;
-	uint32_t blockCount;
+	be<uint32_t> startBlock;
+	be<uint32_t> blockCount;
 };
 
 struct HFSPlusForkData
 {
-	uint64_t logicalSize;
-	uint32_t clumpSize;
-	uint32_t totalBlocks;
+	be<uint64_t> logicalSize;
+	be<uint32_t> clumpSize;
+	be<uint32_t> totalBlocks;
 	HFSPlusExtentDescriptor extents[8];
 };
 
 struct HFSPlusVolumeHeader
 {
-	uint16_t signature;
-	uint16_t version;
-	uint32_t attributes;
-	uint32_t lastMountedVersion;
-	uint32_t journalInfoBlock;
+	be<uint16_t> signature;
+	be<uint16_t> version;
+	be<uint32_t> attributes;
+	be<uint32_t> lastMountedVersion;
+	be<uint32_t> journalInfoBlock;
  
-	uint32_t createDate;
-	uint32_t modifyDate;
-	uint32_t backupDate;
-	uint32_t checkedDate;
+	be<uint32_t> createDate;
+	be<uint32_t> modifyDate;
+	be<uint32_t> backupDate;
+	be<uint32_t> checkedDate;
  
-	uint32_t fileCount;
-	uint32_t folderCount;
+	be<uint32_t> fileCount;
+	be<uint32_t> folderCount;
  
-	uint32_t blockSize;
-	uint32_t totalBlocks;
-	uint32_t freeBlocks;
+	be<uint32_t> blockSize;
+	be<uint32_t> totalBlocks;
+	be<uint32_t> freeBlocks;
  
-	uint32_t nextAllocation;
-	uint32_t rsrcClumpSize;
-	uint32_t dataClumpSize;
-	uint32_t nextCatalogID;
+	be<uint32_t> nextAllocation;
+	be<uint32_t> rsrcClumpSize;
+	be<uint32_t> dataClumpSize;
+	be<uint32_t> nextCatalogID;
  
-	uint32_t writeCount;
-	uint64_t encodingsBitmap;
+	be<uint32_t> writeCount;
+	be<uint64_t> encodingsBitmap;
  
-	uint32_t finderInfo[8];
+	be<uint32_t> finderInfo[8];
  
 	HFSPlusForkData allocationFile;
 	HFSPlusForkData extentsFile;
@@ -104,12 +106,12 @@ enum class NodeKind : int8_t
 
 struct BTNodeDescriptor
 {
-	uint32_t fLink;
-	uint32_t bLink;
+	be<uint32_t> fLink;
+	be<uint32_t> bLink;
 	NodeKind kind;
-	uint8_t height;
-	uint16_t numRecords;
-	uint16_t reserved;
+	be<uint8_t> height;
+	be<uint16_t> numRecords;
+	be<uint16_t> reserved;
 };
 
 enum class KeyCompareType : uint8_t
@@ -120,24 +122,24 @@ enum class KeyCompareType : uint8_t
 
 struct BTHeaderRec
 {
-	uint16_t treeDepth;
-	uint32_t rootNode;
-	uint32_t leafRecords;
-	uint32_t firstLeafNode;
-	uint32_t lastLeafNode;
-	uint16_t nodeSize;
-	uint16_t maxKeyLength;
-	uint32_t totalNodes;
-	uint32_t freeNodes;
-	uint16_t reserved1;
-	uint32_t clumpSize;	  // misaligned
-	uint8_t btreeType;
+	be<uint16_t> treeDepth;
+	be<uint32_t> rootNode;
+	be<uint32_t> leafRecords;
+	be<uint32_t> firstLeafNode;
+	be<uint32_t> lastLeafNode;
+	be<uint16_t> nodeSize;
+	be<uint16_t> maxKeyLength;
+	be<uint32_t> totalNodes;
+	be<uint32_t> freeNodes;
+	be<uint16_t> reserved1;
+	be<uint32_t> clumpSize;	  // misaligned
+	be<uint8_t> btreeType;
 	KeyCompareType keyCompareType;
-	uint32_t attributes;	 // long aligned again
-	uint32_t reserved3[16];
+	be<uint32_t> attributes;	 // long aligned again
+	be<uint32_t> reserved3[16];
 };
 
-enum
+enum : uint32_t
 {
 	kHFSNullID = 0,
 	kHFSRootParentID = 1,
@@ -155,8 +157,8 @@ enum
 
 struct HFSPlusCatalogKey
 {
-	uint16_t keyLength;
-	HFSCatalogNodeID parentID;
+	be<uint16_t> keyLength;
+	be<HFSCatalogNodeID> parentID;
 	HFSString nodeName;
 };
 
@@ -170,100 +172,103 @@ enum class RecordType : uint16_t
 
 struct Point
 {
-	int16_t v, h;
+	be<int16_t> v, h;
 };
 
 struct Rect
 {
-	int16_t top, left, bottom, right;
+	be<int16_t> top, left, bottom, right;
 };
 
 struct FileInfo
 {
-	uint32_t fileType;
-	uint32_t fileCreator;
-	uint16_t finderFlags;
+	be<uint32_t> fileType;
+	be<uint32_t> fileCreator;
+	be<uint16_t> finderFlags;
 	Point location;
-	uint16_t reservedField;
+	be<uint16_t> reservedField;
 };
 
 //struct ExtendedFileInfo
 //{
-//    int16_t reserved1[4];
-//    uint16_t extendedFinderFlags;
-//    int16_t reserved2;
-//    int32_t putAwayFolderID;
+//    be<int16_t> reserved1[4];
+//    be<uint16_t> extendedFinderFlags;
+//    be<int16_t> reserved2;
+//    be<int32_t> putAwayFolderID;
 //};
 // looking in Apple Source, this is the modern definition of ExtendedFileInfo
 struct ExtendedFileInfo
 {
-	uint32_t document_id;
-	uint32_t date_added;
-	uint16_t extended_flags;
-	uint16_t reserved2;
-	uint32_t write_gen_counter;
+	be<uint32_t> document_id;
+	be<uint32_t> date_added;
+	be<uint16_t> extended_flags;
+	be<uint16_t> reserved2;
+	be<uint32_t> write_gen_counter;
 } __attribute__((aligned(2), packed));
+static_assert(sizeof(ExtendedFileInfo) == 16, "sizeof(ExtendedFileInfo) != 16");
 
 struct FolderInfo
 {
 	Rect windowBounds;
-	uint16_t finderFlags;
+	be<uint16_t> finderFlags;
 	Point location;
-	uint16_t reservedField;
+	be<uint16_t> reservedField;
 };
 
 //struct ExtendedFolderInfo
 //{
 //    Point scrollPosition;
-//    int32_t reserved1;
-//    uint16_t extendedFinderFlags;
-//    int16_t reserved2;
-//    int32_t putAwayFolderID;
+//    be<int32_t> reserved1;
+//    be<uint16_t> extendedFinderFlags;
+//    be<int16_t> reserved2;
+//    be<int32_t> putAwayFolderID;
 //};
 // looking in Apple Source, this is the modern definition of ExtendedFolderInfo
 struct ExtendedFolderInfo
 {
-	uint32_t document_id;
-	uint32_t date_added;
-	uint16_t extended_flags;
-	uint16_t reserved3;
-	uint32_t write_gen_counter;
+	be<uint32_t> document_id;
+	be<uint32_t> date_added;
+	be<uint16_t> extended_flags;
+	be<uint16_t> reserved3;
+	be<uint32_t> write_gen_counter;
 } __attribute__((aligned(2), packed));
+
+inline RecordType bswap_be_to_h(const RecordType &x) { return RecordType(be16toh((uint16_t)x)); }
 
 struct HFSPlusCatalogFolder
 {
-	RecordType recordType;
-	uint16_t flags;
-	uint32_t valence;
-	HFSCatalogNodeID folderID;
-	uint32_t createDate;
-	uint32_t contentModDate;
-	uint32_t attributeModDate;
-	uint32_t accessDate;
-	uint32_t backupDate;
+	be<RecordType> recordType;
+	be<uint16_t> flags;
+	be<uint32_t> valence;
+	be<HFSCatalogNodeID> folderID;
+	be<uint32_t> createDate;
+	be<uint32_t> contentModDate;
+	be<uint32_t> attributeModDate;
+	be<uint32_t> accessDate;
+	be<uint32_t> backupDate;
 	HFSPlusBSDInfo permissions;
 	FolderInfo userInfo;
 	ExtendedFolderInfo finderInfo;
-	uint32_t textEncoding;
-	uint32_t reserved;
+	be<uint32_t> textEncoding;
+	be<uint32_t> reserved;
 };
 
 struct HFSPlusCatalogFile
 {
-	RecordType recordType;
-	uint16_t flags;
-	uint32_t reserved1;
-	HFSCatalogNodeID fileID;
-	uint32_t createDate;
-	uint32_t contentModDate;
-	uint32_t attributeModDate;
-	uint32_t accessDate;
-	uint32_t backupDate;
+	be<RecordType> recordType;
+	be<uint16_t> flags;
+	be<uint32_t> reserved1;
+	be<HFSCatalogNodeID> fileID;
+	be<uint32_t> createDate;
+	be<uint32_t> contentModDate;
+	be<uint32_t> attributeModDate;
+	be<uint32_t> accessDate;
+	be<uint32_t> backupDate;
 	HFSPlusBSDInfo permissions;
 	FileInfo userInfo;
 	ExtendedFileInfo finderInfo;
-	uint32_t textEncoding;
-	uint32_t reserved2;
+	be<uint32_t> textEncoding;
+	be<uint32_t> reserved2;
  
 	HFSPlusForkData dataFork;
 	HFSPlusForkData resourceFork;
@@ -280,29 +285,29 @@ struct HFSPlusCatalogFileOrFolder
 
 struct HFSPlusCatalogThread
 {
-	RecordType recordType;
-	int16_t reserved;
-	HFSCatalogNodeID parentID;
+	be<RecordType> recordType;
+	be<int16_t> reserved;
+	be<HFSCatalogNodeID> parentID;
 	HFSString nodeName;
 };
 
 struct HFSPlusExtentKey
 {
-	uint16_t keyLength;
-	uint8_t forkType;
-	uint8_t pad;
-	HFSCatalogNodeID fileID;
-	uint32_t startBlock;
+	be<uint16_t> keyLength;
+	be<uint8_t> forkType;
+	be<uint8_t> pad;
+	be<HFSCatalogNodeID> fileID;
+	be<uint32_t> startBlock;
 };
 
 struct HFSPlusAttributeKey
 {
-	uint16_t keyLength;
-	uint16_t padding;
-	HFSCatalogNodeID fileID;
-	uint32_t startBlock; // first allocation block number for extents
-	uint16_t attrNameLength;
-	uint16_t attrName[127];
+	be<uint16_t> keyLength;
+	be<uint16_t> padding;
+	be<HFSCatalogNodeID> fileID;
+	be<uint32_t> startBlock; // first allocation block number for extents
+	be<uint16_t> attrNameLength;
+	uint16_t attrName[127]; // TODO ?
 };
 
 enum
@@ -314,10 +319,10 @@ enum
 
 struct HFSPlusAttributeDataInline
 {
-	uint32_t recordType; // kHFSPlusAttrInlineData
-	uint64_t reserved;
-	uint32_t attrSize;
-	uint8_t attrData[];
+	be<uint32_t> recordType; // kHFSPlusAttrInlineData
+	be<uint64_t> reserved;
+	be<uint32_t> attrSize;
+	be<uint8_t> attrData[];
 };
 
 // File type and creator for symlink

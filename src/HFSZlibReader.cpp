@@ -19,20 +19,19 @@ HFSZlibReader::HFSZlibReader(std::shared_ptr<Reader> parent, uint64_t uncompress
 	
 	if (!singleRun)
 	{
-		uint32_t numEntries;
-		std::unique_ptr<uint32_t[]> entries;
+		le_jief<uint32_t> numEntries;
+		std::unique_ptr<le_jief<uint32_t>[]> entries;
 		
 		if (m_reader->read(&numEntries, sizeof(numEntries), 0) != sizeof(numEntries))
 			throw io_error("Short read of compression map");
 		
-		numEntries = le(numEntries);
-		entries.reset(new uint32_t[(numEntries+1) * 2]);
+		entries.reset(new le_jief<uint32_t>[(numEntries+1) * 2]);
 		
 		if (m_reader->read(entries.get(), sizeof(uint32_t) * 2 * (numEntries+1), sizeof(numEntries)) != sizeof(uint32_t) * 2 * (numEntries+1))
 			throw io_error("Short read of compression map entries");
 		
 		for (size_t i = 0; i < numEntries+1; i++)
-			m_offsets.push_back(std::make_pair(le(entries[i*2]), le(entries[i*2+1])));
+			m_offsets.push_back(std::make_pair(entries[i*2], entries[i*2+1]));
 	}
 	else
 	{

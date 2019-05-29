@@ -1,8 +1,8 @@
 #ifndef DMG_H
 #define DMG_H
-
+#include "be.h"
 #pragma pack(1)
-#define UDIF_SIGNATURE 0x6B6F6C79
+#define UDIF_SIGNATURE 0x6B6F6C79 // aka koly
 
 enum
 {
@@ -17,62 +17,62 @@ enum
 
 struct UDIFChecksum
 {
-	uint32_t type;
-	uint32_t size;
-	uint32_t data[0x20];
+	be<uint32_t> type;
+	be<uint32_t> size;
+	be<uint32_t> data[0x20];
 };
 
 struct UDIFID
 {
-	uint32_t data1; /* smallest */
-	uint32_t data2;
-	uint32_t data3;
-	uint32_t data4; /* largest */
+	be<uint32_t> data1; /* smallest */
+	be<uint32_t> data2;
+	be<uint32_t> data3;
+	be<uint32_t> data4; /* largest */
 };
 
 struct UDIFResourceFile
 {
-	uint32_t fUDIFSignature;
-	uint32_t fUDIFVersion;
-	uint32_t fUDIFHeaderSize;
-	uint32_t fUDIFFlags;
+	be<uint32_t> fUDIFSignature;
+	be<uint32_t> fUDIFVersion;
+	be<uint32_t> fUDIFHeaderSize;
+	be<uint32_t> fUDIFFlags;
 	
-	uint64_t fUDIFRunningDataForkOffset;
-	uint64_t fUDIFDataForkOffset;
-	uint64_t fUDIFDataForkLength;
-	uint64_t fUDIFRsrcForkOffset;
-	uint64_t fUDIFRsrcForkLength;
+	be<uint64_t> fUDIFRunningDataForkOffset;
+	be<uint64_t> fUDIFDataForkOffset;
+	be<uint64_t> fUDIFDataForkLength;
+	be<uint64_t> fUDIFRsrcForkOffset;
+	be<uint64_t> fUDIFRsrcForkLength;
 	
-	uint32_t fUDIFSegmentNumber;
-	uint32_t fUDIFSegmentCount;
+	be<uint32_t> fUDIFSegmentNumber;
+	be<uint32_t> fUDIFSegmentCount;
 	UDIFID fUDIFSegmentID;  /* a 128-bit number like a GUID, but does not seem to be a OSF GUID, since it doesn't have the proper versioning byte */
 	
 	UDIFChecksum fUDIFDataForkChecksum;
 	
-	uint64_t fUDIFXMLOffset;
-	uint64_t fUDIFXMLLength;
+	be<uint64_t> fUDIFXMLOffset;
+	be<uint64_t> fUDIFXMLLength;
 	
 	uint8_t reserved1[0x78]; /* this is actually the perfect amount of space to store every thing in this struct until the checksum */
 	
 	UDIFChecksum fUDIFMasterChecksum;
 	
-	uint32_t fUDIFImageVariant;
-	uint64_t fUDIFSectorCount;
+	be<uint32_t> fUDIFImageVariant;
+	be<uint64_t> fUDIFSectorCount;
 	
-	uint32_t reserved2;
-	uint32_t reserved3;
-	uint32_t reserved4;
+	be<uint32_t> reserved2;
+	be<uint32_t> reserved3;
+	be<uint32_t> reserved4;
 	
 };
 
 struct BLKXRun
 {
-	uint32_t type;
-	uint32_t reserved;
-	uint64_t sectorStart;
-	uint64_t sectorCount;
-	uint64_t compOffset;
-	uint64_t compLength;
+	be<uint32_t> type;
+	be<uint32_t> reserved;
+	be<uint64_t> sectorStart;
+	be<uint64_t> sectorCount;
+	be<uint64_t> compOffset;
+	be<uint64_t> compLength;
 };
 
 enum class RunType : uint32_t
@@ -91,14 +91,14 @@ enum class RunType : uint32_t
 struct SizeResource
 {
 	uint16_t version; /* set to 5 */
-	uint32_t isHFS; /* first dword of v53(ImageInfoRec): Set to 1 if it's a HFS or HFS+ partition -- duh. */
-	uint32_t unknown1; /* second dword of v53: seems to be garbage if it's HFS+, stuff related to HFS embedded if it's that*/
+	be<uint32_t> isHFS; /* first dword of v53(ImageInfoRec): Set to 1 if it's a HFS or HFS+ partition -- duh. */
+	be<uint32_t> unknown1; /* second dword of v53: seems to be garbage if it's HFS+, stuff related to HFS embedded if it's that*/
 	uint8_t dataLen; /* length of data that proceeds, comes right before the data in ImageInfoRec. Always set to 0 for HFS, HFS+ */
 	uint8_t data[255]; /* other data from v53, dataLen + 1 bytes, the rest NULL filled... a string? Not set for HFS, HFS+ */
-	uint32_t unknown2; /* 8 bytes before volumeModified in v53, seems to be always set to 0 for HFS, HFS+  */
-	uint32_t unknown3; /* 4 bytes before volumeModified in v53, seems to be always set to 0 for HFS, HFS+ */
-	uint32_t volumeModified; /* offset 272 in v53 */
-	uint32_t unknown4; /* always seems to be 0 for UDIF */
+	be<uint32_t> unknown2; /* 8 bytes before volumeModified in v53, seems to be always set to 0 for HFS, HFS+  */
+	be<uint32_t> unknown3; /* 4 bytes before volumeModified in v53, seems to be always set to 0 for HFS, HFS+ */
+	be<uint32_t> volumeModified; /* offset 272 in v53 */
+	be<uint32_t> unknown4; /* always seems to be 0 for UDIF */
 	uint16_t volumeSignature; /* HX in our case */
 	uint16_t sizePresent; /* always set to 1 */
 };
@@ -106,8 +106,8 @@ struct SizeResource
 struct CSumResource
 {
 	uint16_t version; /* set to 1 */
-	uint32_t type; /* set to 0x2 for MKBlockChecksum */
-	uint32_t checksum;
+	be<uint32_t> type; /* set to 0x2 for MKBlockChecksum */
+	be<uint32_t> checksum;
 };
 
 #define DDM_DESCRIPTOR 0xFFFFFFFF
@@ -115,25 +115,25 @@ struct CSumResource
 
 struct BLKXTable
 {
-	uint32_t fUDIFBlocksSignature;
-	uint32_t infoVersion;
-	uint64_t firstSectorNumber;
-	uint64_t sectorCount;
+	be<uint32_t> fUDIFBlocksSignature;
+	be<uint32_t> infoVersion;
+	be<uint64_t> firstSectorNumber;
+	be<uint64_t> sectorCount;
 	
-	uint64_t dataStart;
-	uint32_t decompressBufferRequested;
-	uint32_t blocksDescriptor;
+	be<uint64_t> dataStart;
+	be<uint32_t> decompressBufferRequested;
+	be<uint32_t> blocksDescriptor;
 	
-	uint32_t reserved1;
-	uint32_t reserved2;
-	uint32_t reserved3;
-	uint32_t reserved4;
-	uint32_t reserved5;
-	uint32_t reserved6;
+	be<uint32_t> reserved1;
+	be<uint32_t> reserved2;
+	be<uint32_t> reserved3;
+	be<uint32_t> reserved4;
+	be<uint32_t> reserved5;
+	be<uint32_t> reserved6;
 	
 	UDIFChecksum checksum;
 	
-	uint32_t blocksRunCount;
+	be<uint32_t> blocksRunCount;
 	BLKXRun runs[0];
 };
 

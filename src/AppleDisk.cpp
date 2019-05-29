@@ -23,10 +23,10 @@ void AppleDisk::load(std::shared_ptr<Reader> readerPM)
 	
 	m_reader->read(&m_block0, sizeof(m_block0), 0);
 	
-	if (be(m_block0.sbSig) != BLOCK0_SIGNATURE)
+	if (m_block0.sbSig != BLOCK0_SIGNATURE)
 		throw io_error("Invalid block0 signature");
 	
-	blockSize = be(m_block0.sbBlkSize);
+	blockSize = m_block0.sbBlkSize;
 	
 	if (!blockSize)
 	{
@@ -48,7 +48,7 @@ void AppleDisk::load(std::shared_ptr<Reader> readerPM)
 			else
 				readerPM->read(&dpme, sizeof(dpme), offset);
 			
-			if (be(dpme.dpme_signature) != DPME_SIGNATURE)
+			if (dpme.dpme_signature != DPME_SIGNATURE)
 				continue;
 			
 			if (lastOK != i-1)
@@ -80,7 +80,7 @@ void AppleDisk::load(std::shared_ptr<Reader> readerPM)
 		else
 			readerPM->read(&dpme, sizeof(dpme), offset);
 		
-		if (be(dpme.dpme_signature) != DPME_SIGNATURE)
+		if (dpme.dpme_signature != DPME_SIGNATURE)
 			continue;
 		
 #ifdef DEBUG
@@ -88,11 +88,11 @@ void AppleDisk::load(std::shared_ptr<Reader> readerPM)
 #endif
 		part.name = dpme.dpme_name;
 		part.type = dpme.dpme_type;
-		part.offset = uint64_t(be(dpme.dpme_pblock_start)) * blockSize;
-		part.size = uint64_t(be(dpme.dpme_pblocks)) * blockSize;
+		part.offset = uint64_t(dpme.dpme_pblock_start) * blockSize;
+		part.size = uint64_t(dpme.dpme_pblocks) * blockSize;
 
 #ifdef DEBUG
-		std::cout << "\tBlock start: " << uint64_t(be(dpme.dpme_pblock_start)) << std::endl;
+		std::cout << "\tBlock start: " << uint64_t(dpme.dpme_pblock_start) << std::endl;
 #endif
 		
 		m_partitions.push_back(part);
@@ -101,9 +101,9 @@ void AppleDisk::load(std::shared_ptr<Reader> readerPM)
 
 bool AppleDisk::isAppleDisk(std::shared_ptr<Reader> reader)
 {
-	decltype(Block0::sbSig) sig = 0;
+	decltype(Block0::sbSig) sig;
 	reader->read(&sig, sizeof(sig), 0);
-	return be(sig) == BLOCK0_SIGNATURE;
+	return sig == BLOCK0_SIGNATURE;
 }
 
 std::shared_ptr<Reader> AppleDisk::readerForPartition(int index)

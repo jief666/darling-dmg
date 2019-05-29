@@ -14,13 +14,13 @@ HFSFork::HFSFork(HFSVolume* vol, const HFSPlusForkData& fork, HFSCatalogNodeID c
 	{
 		auto& elem = m_fork.extents[i];
 		if (elem.blockCount > 0)
-			m_extents.push_back(HFSPlusExtentDescriptor{ be(elem.startBlock), be(elem.blockCount) });
+			m_extents.push_back(HFSPlusExtentDescriptor{ elem.startBlock, elem.blockCount });
 	}
 }
 
 uint64_t HFSFork::length()
 {
-	return be(m_fork.logicalSize);
+	return m_fork.logicalSize;
 }
 
 void HFSFork::loadFromOverflowsFile(uint32_t blocksSoFar)
@@ -42,17 +42,17 @@ void HFSFork::loadFromOverflowsFile(uint32_t blocksSoFar)
 
 int32_t HFSFork::read(void* buf, int32_t count, uint64_t offset)
 {
-	const auto blockSize = be(m_volume->m_header.blockSize);
+	const auto blockSize = m_volume->m_header.blockSize;
 	const uint32_t firstBlock = offset / blockSize;
 	uint32_t blocksSoFar;
 	int firstExtent, extent;
 	uint32_t read = 0;
 	uint64_t offsetInExtent;
 	
-	if (offset > be(m_fork.logicalSize))
+	if (offset > m_fork.logicalSize)
 		count = 0;
-	else if (offset+count > be(m_fork.logicalSize))
-		count = be(m_fork.logicalSize) - offset;
+	else if (offset+count > m_fork.logicalSize)
+		count = m_fork.logicalSize - offset;
 	
 	if (!count)
 		return 0;

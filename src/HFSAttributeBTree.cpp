@@ -16,7 +16,7 @@ std::map<std::string, std::vector<uint8_t>> HFSAttributeBTree::getattr(HFSCatalo
 	std::map<std::string, std::vector<uint8_t>> rv;
 
 	memset(&key, 0, sizeof(key));
-	key.fileID = htobe32(cnid);
+	key.fileID = cnid;
 
 	leaves = findLeafNodes((Key*) &key, cnidComparator);
 	
@@ -30,17 +30,17 @@ std::map<std::string, std::vector<uint8_t>> HFSAttributeBTree::getattr(HFSCatalo
 			std::vector<uint8_t> vecData;
 			std::string name;
 
-			if (be(recordKey->fileID) != cnid)
+			if (recordKey->fileID != cnid)
 				continue;
 
 			data = leaf.getRecordData<HFSPlusAttributeDataInline>(i);
 
 			// process data
-			if (be(data->recordType) != kHFSPlusAttrInlineData)
+			if (data->recordType != kHFSPlusAttrInlineData)
 				continue;
 			
-			vecData = std::vector<uint8_t>(data->attrData, &data->attrData[be(data->attrSize)]);
-			name = UnicharToString(be(recordKey->attrNameLength), recordKey->attrName);
+			vecData = std::vector<uint8_t>(data->attrData, &data->attrData[data->attrSize]);
+			name = UnicharToString(recordKey->attrNameLength, recordKey->attrName);
 			
 			rv[name] = vecData;
 		}
@@ -56,10 +56,10 @@ bool HFSAttributeBTree::getattr(HFSCatalogNodeID cnid, const std::string& attrNa
 	UnicodeString ucAttrName = UnicodeString::fromUTF8(attrName);
 	
 	memset(&key, 0, sizeof(key));
-	key.fileID = htobe32(cnid);
+	key.fileID = cnid;
 	
 	key.attrNameLength = StringToUnichar(attrName, key.attrName, sizeof(key.attrName));
-	key.attrNameLength = htobe16(key.attrNameLength);
+	key.attrNameLength = key.attrNameLength;
 	
 	leafNodePtr = findLeafNode((Key*) &key, cnidAttrComparator);
 	if (!leafNodePtr)
@@ -71,17 +71,17 @@ bool HFSAttributeBTree::getattr(HFSCatalogNodeID cnid, const std::string& attrNa
 		HFSPlusAttributeKey* recordKey = leafNode.getRecordKey<HFSPlusAttributeKey>(i);
 		HFSPlusAttributeDataInline* data;
 		
-		UnicodeString recAttrName((char*)recordKey->attrName, be(recordKey->attrNameLength)*2, "UTF-16BE");
+		UnicodeString recAttrName((char*)recordKey->attrName, recordKey->attrNameLength*2, "UTF-16BE");
 
-		if (be(recordKey->fileID) == cnid && recAttrName == ucAttrName)
+		if (recordKey->fileID == cnid && recAttrName == ucAttrName)
 		{
 			data = leafNode.getRecordData<HFSPlusAttributeDataInline>(i);
 
 			// process data
-			if (be(data->recordType) != kHFSPlusAttrInlineData)
+			if (data->recordType != kHFSPlusAttrInlineData)
 				continue;
 		
-			dataOut = std::vector<uint8_t>(data->attrData, &data->attrData[be(data->attrSize)]);
+			dataOut = std::vector<uint8_t>(data->attrData, &data->attrData[data->attrSize]);
 			return true;
 		}
 	}
@@ -94,19 +94,19 @@ int HFSAttributeBTree::cnidAttrComparator(const Key* indexKey, const Key* desire
 	const HFSPlusAttributeKey* indexAttributeKey = reinterpret_cast<const HFSPlusAttributeKey*>(indexKey);
 	const HFSPlusAttributeKey* desiredAttributeKey = reinterpret_cast<const HFSPlusAttributeKey*>(desiredKey);
 	
-	//std::cout << "Attr search: index cnid: " << be(indexAttributeKey->fileID) << " desired cnid: " << be(desiredAttributeKey->fileID) << std::endl;
+	//std::cout << "Attr search: index cnid: " << indexAttributeKey->fileID << " desired cnid: " << desiredAttributeKey->fileID << std::endl;
 
-	if (be(indexAttributeKey->fileID) > be(desiredAttributeKey->fileID))
+	if (indexAttributeKey->fileID > desiredAttributeKey->fileID)
 		return 1;
-	else if (be(indexAttributeKey->fileID) < be(desiredAttributeKey->fileID))
+	else if (indexAttributeKey->fileID < desiredAttributeKey->fileID)
 		return -1;
 	else
 	{
 		UnicodeString desiredName, indexName;
 		
-		desiredName = UnicodeString((char*)desiredAttributeKey->attrName, be(desiredAttributeKey->attrNameLength)*2, "UTF-16BE");
-		indexName = UnicodeString((char*)indexAttributeKey->attrName, be(indexAttributeKey->attrNameLength)*2, "UTF-16BE");
-		
+		desiredName = UnicodeString((char*)desiredAttributeKey->attrName, desiredAttributeKey->attrNameLength*2, "UTF-16BE");
+		indexName = UnicodeString((char*)indexAttributeKey->attrName, indexAttributeKey->attrNameLength*2, "UTF-16BE");
+
 		return indexName.compare(desiredName);
 	}
 }
@@ -116,9 +116,9 @@ int HFSAttributeBTree::cnidComparator(const Key* indexKey, const Key* desiredKey
 	const HFSPlusAttributeKey* indexAttributeKey = reinterpret_cast<const HFSPlusAttributeKey*>(indexKey);
 	const HFSPlusAttributeKey* desiredAttributeKey = reinterpret_cast<const HFSPlusAttributeKey*>(desiredKey);
 
-	if (be(indexAttributeKey->fileID) > be(desiredAttributeKey->fileID))
+	if (indexAttributeKey->fileID > desiredAttributeKey->fileID)
 		return 1;
-	else if (be(indexAttributeKey->fileID) < be(desiredAttributeKey->fileID))
+	else if (indexAttributeKey->fileID < desiredAttributeKey->fileID)
 		return -1;
 	else
 		return 0;

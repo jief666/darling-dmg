@@ -55,7 +55,7 @@ public:
 	
 	uint16_t recordCount() const
 	{
-		return be(m_descriptor->numRecords);
+		return m_descriptor->numRecords;
 	}
 	
 	BTNodeDescriptor* descriptor() const
@@ -75,7 +75,7 @@ public:
 	
 	uint32_t forwardLink() const
 	{
-		return be(m_descriptor->fLink);
+		return m_descriptor->fLink;
 	}
 	
 	template<typename KeyType> KeyType* getKey() const
@@ -85,17 +85,17 @@ public:
 	
 	template<typename KeyType> KeyType* getRecordKey(uint16_t recordIndex) const
 	{
-		uint16_t recordOffset = be(*(m_firstRecordOffset - recordIndex));
+		uint16_t recordOffset = *(m_firstRecordOffset - recordIndex);
 		
 		return reinterpret_cast<KeyType*>(descPtr() + recordOffset);
 	}
 	
 	template<typename DataType> DataType* getRecordData(uint16_t recordIndex) const
 	{
-		uint16_t* keyLength = getRecordKey<uint16_t>(recordIndex);
+		be<uint16_t>* keyLength = getRecordKey<be<uint16_t>>(recordIndex);
 		char* keyPtr = reinterpret_cast<char*>(keyLength);
 		
-		return reinterpret_cast<DataType*>(keyPtr + be(*keyLength) + sizeof(uint16_t));
+		return reinterpret_cast<DataType*>(keyPtr + *keyLength + sizeof(uint16_t));
 	}
 
 	template <typename KeyType> class RecordIterator : public std::iterator<std::random_access_iterator_tag, KeyType>
@@ -192,7 +192,7 @@ private:
 		if (m_descriptorData.size()) // required check!
 	{
 		m_descriptor = reinterpret_cast<BTNodeDescriptor*>(&m_descriptorData[0]);
-			m_firstRecordOffset = reinterpret_cast<uint16_t*>(descPtr() + m_descriptorData.size() - sizeof(uint16_t));
+			m_firstRecordOffset = reinterpret_cast<be<uint16_t>*>(descPtr() + m_descriptorData.size() - sizeof(uint16_t));
 		}else{
 			m_descriptor = nullptr;
 			m_firstRecordOffset = nullptr;
@@ -202,7 +202,7 @@ private:
 	std::vector<uint8_t> m_descriptorData;
 	// convenience initialised by initConveniencePointerFromBuffer()
 	mutable BTNodeDescriptor* m_descriptor;
-	uint16_t* m_firstRecordOffset;
+	be<uint16_t>* m_firstRecordOffset;
 	#ifdef DEBUG
 		uint32_t m_nodeIndex;
 	#endif

@@ -37,6 +37,10 @@ int main(int argc, const char** argv)
 		}
 	
 		openDisk(argv[1]);
+
+system((std::string("umount ") + argv[2]).c_str());
+//struct stat st;
+//hfs_getattr("/", &st);
 	
 		memset(&ops, 0, sizeof(ops));
 	
@@ -53,14 +57,20 @@ int main(int argc, const char** argv)
 	
 		for (int i = 0; i < argc; i++)
 		{
-			if (i == 1)
+			if (i == 1) {
 				;
-			else
+			}else
 				fuse_opt_add_arg(&args, argv[i]);
 		}
 		fuse_opt_add_arg(&args, "-oro");
 		fuse_opt_add_arg(&args, "-s");
-	
+		fuse_opt_add_arg(&args, "-o");
+		fuse_opt_add_arg(&args, "use_ino");
+		#ifdef DARLING_DMG_DEBUG
+			fuse_opt_add_arg(&args, "-o");
+			fuse_opt_add_arg(&args, "allow_other");
+		#endif
+
 		std::cerr << "Everything looks OK, disk mounted\n";
 
 #ifdef BEFORE_MOUNT_EXTRA // Darling only
@@ -115,9 +125,10 @@ void openDisk(const char* path)
 
 		for (size_t i = 0; i < parts.size(); i++)
 		{
-			if (parts[i].type == "Apple_HFS" || parts[i].type == "Apple_HFSX")
+			auto& part = parts[i];
+			if (part.type == "Apple_HFS" || part.type == "Apple_HFSX")
 			{
-				std::cerr << "Using partition #" << i << " of type " << parts[i].type << std::endl;
+				std::cerr << "Using partition #" << i << " of type " << part.type << std::endl;
 				partIndex = i;
 				break;
 			}

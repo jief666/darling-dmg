@@ -15,7 +15,7 @@ void HFSExtentsOverflowBTree::findExtentsForFile(HFSCatalogNodeID cnid, bool res
 	bool first = true;
 
 	key.forkType = resourceFork ? 0xff : 0;
-	key.fileID = htobe32(cnid);
+	key.fileID = cnid;
 
 	leaves = findLeafNodes((Key*) &key, cnidComparator);
 
@@ -30,13 +30,13 @@ void HFSExtentsOverflowBTree::findExtentsForFile(HFSCatalogNodeID cnid, bool res
 			if (recordKey->forkType != key.forkType || recordKey->fileID != key.fileID)
 				continue;
 			
-			//std::cout << "Examining extra extents from startBlock " << be(recordKey->startBlock) << std::endl;
-			if (be(recordKey->startBlock) < startBlock) // skip descriptors already contained in the extents file
+			//std::cout << "Examining extra extents from startBlock " << recordKey->startBlock << std::endl;
+			if (recordKey->startBlock < startBlock) // skip descriptors already contained in the extents file
 				continue;
 
 			if (first)
 			{
-				if (be(recordKey->startBlock) != startBlock)
+				if (recordKey->startBlock != startBlock)
 					throw io_error("Unexpected startBlock value");
 				first = false;
 			}
@@ -52,7 +52,7 @@ void HFSExtentsOverflowBTree::findExtentsForFile(HFSCatalogNodeID cnid, bool res
 					break;
 				}
 
-				extraExtents.push_back(HFSPlusExtentDescriptor{ be(extents[x].startBlock), be(extents[x].blockCount) });
+				extraExtents.push_back(HFSPlusExtentDescriptor{ extents[x].startBlock, extents[x].blockCount });
 			}
 		}
 	}
@@ -69,9 +69,9 @@ int HFSExtentsOverflowBTree::cnidComparator(const Key* indexKey, const Key* desi
 		return -1;
 	else
 	{
-		if (be(indexExtentKey->fileID) > be(desiredExtentKey->fileID))
+		if (indexExtentKey->fileID > desiredExtentKey->fileID)
 			return 1;
-		else if (be(indexExtentKey->fileID) < be(desiredExtentKey->fileID))
+		else if (indexExtentKey->fileID < desiredExtentKey->fileID)
 			return -1;
 		else
 			return 0;

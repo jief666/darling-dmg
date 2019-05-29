@@ -83,76 +83,45 @@
 #else
 #include <endian.h>
 #endif
-#include "hfsplus.h" // for RecordType
 
 
-template <typename T> T be(T value);
+inline uint16_t bswap_le_to_h(const uint8_t &x) { return x; }
+inline uint16_t bswap_le_to_h(const uint16_t &x) { return le16toh(x); }
+inline uint32_t bswap_le_to_h(const uint32_t &x) { return le32toh(x); }
+inline uint64_t bswap_le_to_h(const uint64_t &x) { return le64toh(x); }
 
-template <> inline RecordType be(RecordType value)
+inline uint16_t bswap_be_to_h(const uint8_t &x) { return x; }
+inline uint16_t bswap_be_to_h(const uint16_t &x) { return be16toh(x); }
+inline uint32_t bswap_be_to_h(const uint32_t &x) { return be32toh(x); }
+inline uint64_t bswap_be_to_h(const uint64_t &x) { return be64toh(x); }
+
+
+
+
+// Little-endian template that does automatic swapping if necessary.
+template<typename T>
+struct le_jief
 {
-	return RecordType(be16toh(uint16_t(value)));
-}
+public:
+	void operator=(T v) { val = bswap_le_to_h(v); }
+	operator T() const { return bswap_le_to_h(val); }
+	T get() const { return bswap_le_to_h(val); }
+private:
+	T val;
+};
 
-template <> inline uint16_t be(uint16_t value)
+
+// Little-endian template that does automatic swapping if necessary.
+template<typename T>
+struct be
 {
-	return be16toh(value);
-}
+public:
+	void operator=(T v) { val = bswap_be_to_h(v); }
+	operator T() const { return bswap_be_to_h(val); }
+	T get() const { return bswap_be_to_h(val); }
+private:
+	T val;
+};
 
-template <> inline uint32_t be(uint32_t value)
-{
-	return be32toh(value);
-}
-
-template <> inline uint64_t be(uint64_t value)
-{
-	return be64toh(value);
-}
-
-template <> inline int16_t be(int16_t value)
-{
-	return be16toh(value);
-}
-
-template <> inline int32_t be(int32_t value)
-{
-	return be32toh(value);
-}
-
-template <> inline int64_t be(int64_t value)
-{
-	return be64toh(value);
-}
-
-template <typename T> T le(T value);
-
-template <> inline uint16_t le(uint16_t value)
-{
-	return le16toh(value);
-}
-
-template <> inline uint32_t le(uint32_t value)
-{
-	return le32toh(value);
-}
-
-template <> inline uint64_t le(uint64_t value)
-{
-	return le64toh(value);
-}
-
-template <> inline int16_t le(int16_t value)
-{
-	return le16toh(value);
-}
-
-template <> inline int32_t le(int32_t value)
-{
-	return le32toh(value);
-}
-
-template <> inline int64_t le(int64_t value)
-{
-	return le64toh(value);
-}
 
 #endif

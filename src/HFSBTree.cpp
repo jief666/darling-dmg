@@ -29,20 +29,20 @@ HFSBTree::HFSBTree(std::shared_ptr<HFSFork> fork, CacheZone* zone, const char* c
 	if (m_reader->read(&m_header, sizeof(m_header), sizeof(desc0)) != sizeof(m_header))
 		throw io_error("Failed to read BTHeaderRec");
 	
-	//std::cout << "leaf records: " << be(m_header.leafRecords) << std::endl;
-	//std::cout << "node size: " << be(m_header.nodeSize) << std::endl;
-	//std::cout << "first leaf node: " << be(m_header.firstLeafNode) << std::endl;
-	//std::cout << "last leaf node: " << be(m_header.lastLeafNode) << std::endl;
+	//std::cout << "leaf records: " << m_header.leafRecords << std::endl;
+	//std::cout << "node size: " << m_header.nodeSize << std::endl;
+	//std::cout << "first leaf node: " << m_header.firstLeafNode << std::endl;
+	//std::cout << "last leaf node: " << m_header.lastLeafNode << std::endl;
 	
 	/*if (m_header.rootNode)
 	{
-		walkTree(be(m_header.rootNode));
+		walkTree(m_header.rootNode);
 	}*/
 }
 
 std::shared_ptr<HFSBTreeNode> HFSBTree::findLeafNode(const Key* indexKey, KeyComparator comp, bool wildcard)
 {
-	return traverseTree(be(m_header.rootNode), indexKey, comp, wildcard);
+	return traverseTree(m_header.rootNode, indexKey, comp, wildcard);
 }
 
 std::vector<std::shared_ptr<HFSBTreeNode>> HFSBTree::findLeafNodes(const Key* indexKey, KeyComparator comp)
@@ -85,7 +85,7 @@ std::vector<std::shared_ptr<HFSBTreeNode>> HFSBTree::findLeafNodes(const Key* in
 std::shared_ptr<HFSBTreeNode> HFSBTree::traverseTree(int nodeIndex, const Key* indexKey, KeyComparator comp, bool wildcard)
 {
 	//std::cout << "Examining node " << nodeIndex << std::endl;
-	std::shared_ptr<HFSBTreeNode> nodePtr = std::make_shared<HFSBTreeNode>(m_reader, nodeIndex, be(m_header.nodeSize));
+	std::shared_ptr<HFSBTreeNode> nodePtr = std::make_shared<HFSBTreeNode>(m_reader, nodeIndex, m_header.nodeSize);
 	HFSBTreeNode& node = *nodePtr;
 
 	switch (node.kind())
@@ -93,7 +93,7 @@ std::shared_ptr<HFSBTreeNode> HFSBTree::traverseTree(int nodeIndex, const Key* i
 		case NodeKind::kBTIndexNode:
 		{
 			int position;
-			uint32_t* childIndex;
+			be<uint32_t>* childIndex;
 
 			if (wildcard)
 			{
@@ -115,9 +115,9 @@ std::shared_ptr<HFSBTreeNode> HFSBTree::traverseTree(int nodeIndex, const Key* i
 				position = 0;
 			
 			// recurse down
-			childIndex = node.getRecordData<uint32_t>(position);
+			childIndex = node.getRecordData<be<uint32_t>>(position);
 			
-			return traverseTree(be(*childIndex), indexKey, comp, wildcard);
+			return traverseTree(*childIndex, indexKey, comp, wildcard);
 		}
 		case NodeKind::kBTLeafNode:
 		{
@@ -137,11 +137,11 @@ std::shared_ptr<HFSBTreeNode> HFSBTree::traverseTree(int nodeIndex, const Key* i
 void HFSBTree::walkTree(int nodeIndex)
 {
 	BTNodeDescriptor* desc;
-	uint32_t offset = be(m_header.nodeSize)*nodeIndex;
+	uint32_t offset = m_header.nodeSize*nodeIndex;
 	uint16_t* firstRecordOffset;
 	
-	desc = reinterpret_cast<BTNodeDescriptor*>(m_tree + be(m_header.nodeSize)*nodeIndex);
-	firstRecordOffset = reinterpret_cast<uint16_t*>(m_tree + be(m_header.nodeSize)*(nodeIndex+1) - sizeof(uint16_t));
+	desc = reinterpret_cast<BTNodeDescriptor*>(m_tree + m_header.nodeSize*nodeIndex);
+	firstRecordOffset = reinterpret_cast<uint16_t*>(m_tree + m_header.nodeSize*(nodeIndex+1) - sizeof(uint16_t));
 	
 	switch (desc->kind)
 	{
@@ -149,18 +149,18 @@ void HFSBTree::walkTree(int nodeIndex)
 		{
 			HFSPlusCatalogKey* key = reinterpret_cast<HFSPlusCatalogKey*>(((char*) desc) + sizeof(BTNodeDescriptor));
 			std::cout << "LeafNode " << nodeIndex << " is a leaf node: " << UnicharToString(key->nodeName) << std::endl;
-			std::cout << "LeafSibling: " << be(desc->fLink) << std::endl;
-			std::cout << "LeafRecords: " << be(desc->numRecords) << std::endl;
+			std::cout << "LeafSibling: " << desc->fLink << std::endl;
+			std::cout << "LeafRecords: " << desc->numRecords << std::endl;
 			
-			for (long i = 0; i < be(desc->numRecords); i++)
+			for (long i = 0; i < desc->numRecords; i++)
 			{
 				uint16_t recordOffset = be(*(firstRecordOffset-i));
 				HFSPlusCatalogKey* recordKey = reinterpret_cast<HFSPlusCatalogKey*>(((char*) desc) + recordOffset);
 				HFSPlusCatalogFile* record;
 				RecordType recType;
 				
-				std::cout << "LeafRecordKey: " << UnicharToString(recordKey->nodeName) << " - parent: " << be(recordKey->parentID) << std::endl;
-				record = reinterpret_cast<HFSPlusCatalogFile*>(((char*) recordKey) + be(recordKey->keyLength) + sizeof(recordKey->keyLength));
+				std::cout << "LeafRecordKey: " << UnicharToString(recordKey->nodeName) << " - parent: " << recordKey->parentID << std::endl;
+				record = reinterpret_cast<HFSPlusCatalogFile*>(((char*) recordKey) + recordKey->keyLength + sizeof(recordKey->keyLength));
 				recType = RecordType(be(uint16_t(record->recordType)));
 				
 				switch (recType)
@@ -168,13 +168,13 @@ void HFSBTree::walkTree(int nodeIndex)
 					case RecordType::kHFSPlusFolderRecord:
 					{
 						HFSPlusCatalogFolder* file = (HFSPlusCatalogFolder*) record;
-						std::cout << "\tFolder: ID " << be(file->folderID) << std::endl;
+						std::cout << "\tFolder: ID " << file->folderID << std::endl;
 						break;
 					}
 					case RecordType::kHFSPlusFileRecord:
 					{
 						HFSPlusCatalogFile* file = (HFSPlusCatalogFile*) record;
-						std::cout << "\tFile: ID " << be(file->fileID) << std::endl;
+						std::cout << "\tFile: ID " << file->fileID << std::endl;
 						break;
 					}
 					case RecordType::kHFSPlusFolderThreadRecord:
@@ -186,7 +186,7 @@ void HFSBTree::walkTree(int nodeIndex)
 					case RecordType::kHFSPlusFileThreadRecord:
 					{
 						HFSPlusCatalogThread* thread = (HFSPlusCatalogThread*) record;
-						std::cout << "\tA file named " << UnicharToString(thread->nodeName) << " with CNID " << be(recordKey->parentID) << " has parent CNID " << be(thread->parentID) << std::endl;
+						std::cout << "\tA file named " << UnicharToString(thread->nodeName) << " with CNID " << recordKey->parentID << " has parent CNID " << thread->parentID << std::endl;
 						break;
 					}
 					default:
@@ -199,18 +199,18 @@ void HFSBTree::walkTree(int nodeIndex)
 		}
 		case NodeKind::kBTIndexNode:
 		{
-			std::cout << "Node " << nodeIndex << " is an index node with " << be(desc->numRecords) << " records\n";
-			//std::cout << "Sibling: " << be(desc->fLink) << std::endl;
+			std::cout << "Node " << nodeIndex << " is an index node with " << desc->numRecords << " records\n";
+			//std::cout << "Sibling: " << desc->fLink << std::endl;
 			
-			for (long i = 0; i < be(desc->numRecords); i++)
+			for (long i = 0; i < desc->numRecords; i++)
 			{
 				uint16_t recordOffset = be(*(firstRecordOffset-i));
 				HFSPlusCatalogKey* record = reinterpret_cast<HFSPlusCatalogKey*>(((char*) desc) + recordOffset);
-				uint16_t keyLen = be(record->keyLength); // TODO:  kBTVariableIndexKeysMask
+				uint16_t keyLen = record->keyLength; // TODO:  kBTVariableIndexKeysMask
 				uint32_t childNodeIndex;
 				
 				std::cout << "Record " << i << ", key len:" << keyLen << std::endl;
-				std::cout << "Index key " << be(record->parentID) << std::endl;
+				std::cout << "Index key " << record->parentID << std::endl;
 				
 				childNodeIndex = be(*(uint32_t*) (((char*)record)+2+keyLen) );
 				std::cout << "Child node index: " << childNodeIndex << std::endl;
